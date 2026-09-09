@@ -38,6 +38,7 @@ Saat memindahkan PRD ke format Markdown secara manual atau konverter biasa:
 ## 🏗️ Arsitektur & Alur Eksekusi
 
 ```mermaid
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#7aa2f7', 'primaryBorderColor': '#3d59a1', 'actorBkg': '#24283b', 'actorBorder': '#7aa2f7', 'lineColor': '#bb9af7', 'altBkg': '#1f2335' }}}%%
 graph TD
     UserReq["Permintaan User: 'Pindahkan PRD Confluence ke prd.md'"] --> AgentSkill["Universal Agent Skill (SKILL.md)"]
     AgentSkill --> Platform{"Platform Target Agent:<br>• Google Antigravity<br>• Claude Code / Desktop<br>• Cursor / Windsurf<br>• Cline / Roo Code / Terminal"}
@@ -276,5 +277,7 @@ python tests/test_all.py
 ---
 
 ## 📄 Lisensi
+
+SPDX-License-Identifier: [MIT](LICENSE)
 
 Proyek ini dirilis di bawah lisensi [MIT License](LICENSE).

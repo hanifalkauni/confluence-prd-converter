@@ -38,6 +38,7 @@ When exporting or migrating these documents to standard Markdown manually or via
 ## 🏗️ Architecture & Execution Flow
 
 ```mermaid
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#7aa2f7', 'primaryBorderColor': '#3d59a1', 'actorBkg': '#24283b', 'actorBorder': '#7aa2f7', 'lineColor': '#bb9af7', 'altBkg': '#1f2335' }}}%%
 graph TD
     UserReq["User Prompt: 'Fetch and convert Confluence PRD to prd.md'"] --> AgentSkill["Universal Agent Skill (SKILL.md)"]
     AgentSkill --> Platform{"Target Agent Platform:<br>• Google Antigravity<br>• Claude Code / Desktop<br>• Cursor / Windsurf<br>• Cline / Roo Code / Terminal"}
@@ -276,5 +277,7 @@ python tests/test_all.py
 ---
 
 ## 📄 License
+
+SPDX-License-Identifier: [MIT](LICENSE)
 
 This project is licensed under the [MIT License](LICENSE).
