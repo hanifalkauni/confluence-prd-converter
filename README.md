@@ -113,17 +113,19 @@ Automatically captures stakeholder feedback, reviewer comments, and architectura
 
 ## 🔌 Multi-Agent Integration Guide
 
-### 1. Google Antigravity IDE
+### 🚀 Recommended: Universal MCP Integration (All AI IDEs)
 
-Add to your `mcp_config.json` (`~/.gemini/config/mcp_config.json`):
+Add `confluence-prd-converter` directly to your AI IDE (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
 
 ```json
 {
   "mcpServers": {
     "confluence-prd-converter": {
-      "command": "python",
+      "command": "npx",
       "args": [
-        "c:/MyProject/skill-agent/confluence-prd-converter/server.py"
+        "-y",
+        "github:hanifalkauni/confluence-prd-converter",
+        "--mcp"
       ],
       "env": {
         "CONFLUENCE_URL": "https://wiki.yourcompany.com",
@@ -134,50 +136,28 @@ Add to your `mcp_config.json` (`~/.gemini/config/mcp_config.json`):
 }
 ```
 
-Place `SKILL.md` in `.agents/skills/confluence-prd-converter/SKILL.md`.
-
 ---
 
-### 2. Claude Code & Claude Desktop
+### ⚡ Automatic Adapter Injection via CLI
 
-Add to `claude_desktop_config.json`:
+Run this command in any workspace root to automatically install rule/skill adapters for all AI agents:
 
-```json
-{
-  "mcpServers": {
-    "confluence-prd-converter": {
-      "command": "python",
-      "args": ["/absolute/path/to/confluence-prd-converter/server.py"],
-      "env": {
-        "CONFLUENCE_URL": "https://wiki.yourcompany.com",
-        "CONFLUENCE_PAT": "YOUR_PERSONAL_ACCESS_TOKEN"
-      }
-    }
-  }
-}
+```bash
+npx -y github:hanifalkauni/confluence-prd-converter init
 ```
 
 ---
 
-### 3. Cursor & Windsurf IDE
+### 💻 Standalone Terminal CLI Runner
 
-In **Cursor Settings -> Features -> MCP Servers** or Windsurf `mcp_config.json`:
-- **Type**: `command`
-- **Command**: `python c:/MyProject/skill-agent/confluence-prd-converter/server.py`
-- **Environment Variables**: `CONFLUENCE_URL`, `CONFLUENCE_PAT`
-
----
-
-### 4. Standalone Terminal / Non-MCP Agents (CLI Runner)
-
-Convert local HTML:
+Convert local HTML export:
 ```bash
-python scripts/run_converter.py --input ./PRD_Export.html --output ./prd.md
+npx -y github:hanifalkauni/confluence-prd-converter --input ./PRD_Export.html --output ./prd.md
 ```
 
 Live fetch from Confluence URL:
 ```bash
-python scripts/run_converter.py --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
+npx -y github:hanifalkauni/confluence-prd-converter --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
 ```
 
 Validate markdown integrity:

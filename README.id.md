@@ -113,17 +113,19 @@ Mengambil komentar reviewer, catatan InfoSec, dan klarifikasi arsitektur secara 
 
 ## 🔌 Panduan Setup Multi-Agent
 
-### 1. Google Antigravity IDE
+### 🚀 Rekomendasi: Integrasi Universal MCP (Semua AI IDE)
 
-Tambahkan ke file `mcp_config.json` (`~/.gemini/config/mcp_config.json`):
+Tambahkan `confluence-prd-converter` langsung ke AI IDE Anda (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
 
 ```json
 {
   "mcpServers": {
     "confluence-prd-converter": {
-      "command": "python",
+      "command": "npx",
       "args": [
-        "c:/MyProject/skill-agent/confluence-prd-converter/server.py"
+        "-y",
+        "github:hanifalkauni/confluence-prd-converter",
+        "--mcp"
       ],
       "env": {
         "CONFLUENCE_URL": "https://wiki.yourcompany.com",
@@ -134,50 +136,28 @@ Tambahkan ke file `mcp_config.json` (`~/.gemini/config/mcp_config.json`):
 }
 ```
 
-Pastikan `SKILL.md` ada di `.agents/skills/confluence-prd-converter/SKILL.md`.
-
 ---
 
-### 2. Claude Code & Claude Desktop
+### ⚡ Pemasangan Adapter Otomatis via CLI
 
-Tambahkan ke `claude_desktop_config.json`:
+Jalankan perintah ini di root workspace proyek apa pun untuk menginstal adapter rule/skill untuk semua AI agent:
 
-```json
-{
-  "mcpServers": {
-    "confluence-prd-converter": {
-      "command": "python",
-      "args": ["/path/ke/confluence-prd-converter/server.py"],
-      "env": {
-        "CONFLUENCE_URL": "https://wiki.yourcompany.com",
-        "CONFLUENCE_PAT": "TOKEN_PAT_ANDA"
-      }
-    }
-  }
-}
+```bash
+npx -y github:hanifalkauni/confluence-prd-converter init
 ```
 
 ---
 
-### 3. Cursor & Windsurf IDE
+### 💻 Runner CLI Terminal Mandiri
 
-Pada **Cursor Settings -> Features -> MCP Servers** atau `mcp_config.json` Windsurf:
-- **Type**: `command`
-- **Command**: `python c:/MyProject/skill-agent/confluence-prd-converter/server.py`
-- **Environment Variables**: `CONFLUENCE_URL`, `CONFLUENCE_PAT`
-
----
-
-### 4. Eksekusi Terminal Langsung / Agent Non-MCP (CLI Runner)
-
-Konversi file HTML lokal:
+Konversi file export HTML lokal:
 ```bash
-python scripts/run_converter.py --input ./PRD_Export.html --output ./prd.md
+npx -y github:hanifalkauni/confluence-prd-converter --input ./PRD_Export.html --output ./prd.md
 ```
 
 Fetch live dari URL Confluence:
 ```bash
-python scripts/run_converter.py --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
+npx -y github:hanifalkauni/confluence-prd-converter --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
 ```
 
 Validasi integritas markdown:
