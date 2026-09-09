@@ -113,7 +113,7 @@ Automatically captures stakeholder feedback, reviewer comments, and architectura
 
 ## 🔌 Multi-Agent Integration Guide
 
-### 🚀 Recommended: Universal MCP Integration (All AI IDEs)
+### 💬 Method A: Universal MCP Server (Recommended for Tool Calling)
 
 Add `confluence-prd-converter` directly to your AI IDE (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
 
@@ -138,17 +138,93 @@ Add `confluence-prd-converter` directly to your AI IDE (Google Antigravity, Clau
 
 ---
 
-### ⚡ Automatic Adapter Injection via CLI
+### 📄 Method B: Pure Skill Agent / Rule File (No MCP Server Required)
 
-Run this command in any workspace root to automatically install rule/skill adapters for all AI agents:
+If you prefer installing the skill instructions directly into your workspace for native agent reasoning:
 
+#### 🌐 Option 1: Automatic via skills.sh (Recommended — 30+ AI Agents)
+Install with a single command into Cursor, Claude Code, Windsurf, Copilot, or Gemini CLI:
+```bash
+npx skills add hanifalkauni/confluence-prd-converter
+```
+
+#### ⚡ Option 2: Automatic Adapter Injection via CLI
+Export all agent adapter files into your current workspace root:
 ```bash
 npx -y github:hanifalkauni/confluence-prd-converter init
 ```
 
+#### 📦 Option 3: Manual Installation per AI Agent
+
+<details>
+<summary><b>🤖 Google Antigravity & Gemini CLI</b></summary>
+
+Copy adapter to local workspace skill directory:
+```bash
+mkdir -p .agents/skills/confluence-prd-converter
+cp adapters/antigravity/SKILL.md .agents/skills/confluence-prd-converter/SKILL.md
+```
+*Or install globally for all workspaces at:* `~/.gemini/config/skills/confluence-prd-converter/SKILL.md`.
+
+</details>
+
+<details>
+<summary><b>🧠 Claude Code & Claude Desktop</b></summary>
+
+Add to project root `CLAUDE.md`:
+```bash
+cp adapters/claude/CLAUDE.md ./CLAUDE.md
+```
+
+</details>
+
+<details>
+<summary><b>⚡ Cursor IDE</b></summary>
+
+Add rule file to `.cursor/rules/`:
+```bash
+mkdir -p .cursor/rules
+cp adapters/cursor/confluence-prd-converter.mdc .cursor/rules/confluence-prd-converter.mdc
+```
+
+</details>
+
+<details>
+<summary><b>🌊 Windsurf IDE</b></summary>
+
+Add rule to `.windsurf/rules/`:
+```bash
+mkdir -p .windsurf/rules
+cp adapters/windsurf/windsurfrules.md .windsurf/rules/confluence-prd-converter.md
+```
+
+</details>
+
+<details>
+<summary><b>🤖 Cline & Roo Code</b></summary>
+
+Add rule to `.clinerules/`:
+```bash
+mkdir -p .clinerules
+cp adapters/cline/clinerules.md .clinerules/confluence-prd-converter.md
+```
+
+</details>
+
+<details>
+<summary><b>🐙 GitHub Copilot</b></summary>
+
+Add to `.github/copilot-instructions.md`:
+```bash
+mkdir -p .github
+cp adapters/copilot/copilot-instructions.md .github/copilot-instructions.md
+```
+
+</details>
+
 ---
 
-### 💻 Standalone Terminal CLI Runner
+### 💻 Method C: Standalone Terminal CLI Runner
 
 Convert local HTML export:
 ```bash

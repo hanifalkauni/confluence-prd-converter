@@ -113,7 +113,7 @@ Mengambil komentar reviewer, catatan InfoSec, dan klarifikasi arsitektur secara 
 
 ## 🔌 Panduan Setup Multi-Agent
 
-### 🚀 Rekomendasi: Integrasi Universal MCP (Semua AI IDE)
+### 💬 Metode A: Universal MCP Server (Direkomendasikan untuk Tool Calling)
 
 Tambahkan `confluence-prd-converter` langsung ke AI IDE Anda (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
 
@@ -138,17 +138,93 @@ Tambahkan `confluence-prd-converter` langsung ke AI IDE Anda (Google Antigravity
 
 ---
 
-### ⚡ Pemasangan Adapter Otomatis via CLI
+### 📄 Metode B: Pure Skill Agent / Rule File (Tanpa Server MCP)
 
-Jalankan perintah ini di root workspace proyek apa pun untuk menginstal adapter rule/skill untuk semua AI agent:
+Jika Anda ingin memasang instruksi skill/rule langsung ke workspace proyek untuk penalaran *native* AI agent:
 
+#### 🌐 Opsi 1: Otomatis via skills.sh (Direkomendasikan — 30+ AI Agents)
+Pasang hanya dengan 1 perintah langsung ke Cursor, Claude Code, Windsurf, Copilot, atau Gemini CLI:
+```bash
+npx skills add hanifalkauni/confluence-prd-converter
+```
+
+#### ⚡ Opsi 2: Inisialisasi Adapter Otomatis via CLI
+Ekspor seluruh file rule adapter agent ke root workspace proyek Anda:
 ```bash
 npx -y github:hanifalkauni/confluence-prd-converter init
 ```
 
+#### 📦 Opsi 3: Pemasangan Manual per AI Agent
+
+<details>
+<summary><b>🤖 Google Antigravity & Gemini CLI</b></summary>
+
+Salin adapter ke direktori skill workspace:
+```bash
+mkdir -p .agents/skills/confluence-prd-converter
+cp adapters/antigravity/SKILL.md .agents/skills/confluence-prd-converter/SKILL.md
+```
+*Atau pasang secara global untuk semua workspace di:* `~/.gemini/config/skills/confluence-prd-converter/SKILL.md`.
+
+</details>
+
+<details>
+<summary><b>🧠 Claude Code & Claude Desktop</b></summary>
+
+Tambahkan ke root proyek `CLAUDE.md`:
+```bash
+cp adapters/claude/CLAUDE.md ./CLAUDE.md
+```
+
+</details>
+
+<details>
+<summary><b>⚡ Cursor IDE</b></summary>
+
+Tambahkan file rule ke `.cursor/rules/`:
+```bash
+mkdir -p .cursor/rules
+cp adapters/cursor/confluence-prd-converter.mdc .cursor/rules/confluence-prd-converter.mdc
+```
+
+</details>
+
+<details>
+<summary><b>🌊 Windsurf IDE</b></summary>
+
+Tambahkan rule ke `.windsurf/rules/`:
+```bash
+mkdir -p .windsurf/rules
+cp adapters/windsurf/windsurfrules.md .windsurf/rules/confluence-prd-converter.md
+```
+
+</details>
+
+<details>
+<summary><b>🤖 Cline & Roo Code</b></summary>
+
+Tambahkan rule ke `.clinerules/`:
+```bash
+mkdir -p .clinerules
+cp adapters/cline/clinerules.md .clinerules/confluence-prd-converter.md
+```
+
+</details>
+
+<details>
+<summary><b>🐙 GitHub Copilot</b></summary>
+
+Tambahkan ke `.github/copilot-instructions.md`:
+```bash
+mkdir -p .github
+cp adapters/copilot/copilot-instructions.md .github/copilot-instructions.md
+```
+
+</details>
+
 ---
 
-### 💻 Runner CLI Terminal Mandiri
+### 💻 Metode C: Runner CLI Terminal Mandiri
 
 Konversi file export HTML lokal:
 ```bash
