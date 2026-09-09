@@ -1,0 +1,140 @@
+<p>
+    <ac:structured-macro ac:name="info">
+        <ac:rich-text-body>
+            <p><strong>Overview:</strong> Technical Specification for Unified Payment &amp; Notification Engine.</p>
+        </ac:rich-text-body>
+    </ac:structured-macro>
+</p>
+<p>
+    <ac:structured-macro ac:name="warning">
+        <ac:rich-text-body>
+            <p>Critical: Ensure all webhook callbacks validate cryptographic HMAC signatures.</p>
+        </ac:rich-text-body>
+    </ac:structured-macro>
+</p>
+
+<h2>1. Project Tracking &amp; Status</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Module</th>
+            <th>Jira Ticket</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Payment Gateway</td>
+            <td>
+                <ac:structured-macro ac:name="jira">
+                    <ac:parameter ac:name="key">PAY-501</ac:parameter>
+                </ac:structured-macro>
+            </td>
+            <td>
+                <ac:structured-macro ac:name="status">
+                    <ac:parameter ac:name="title">ACTIVE</ac:parameter>
+                </ac:structured-macro>
+            </td>
+        </tr>
+        <tr>
+            <td>Notification Dispatcher</td>
+            <td>
+                <ac:structured-macro ac:name="jira">
+                    <ac:parameter ac:name="key">PAY-502</ac:parameter>
+                </ac:structured-macro>
+            </td>
+            <td>
+                <ac:structured-macro ac:name="status">
+                    <ac:parameter ac:name="title">IN REVIEW</ac:parameter>
+                </ac:structured-macro>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>2. Architecture &amp; Sequence Diagrams</h2>
+<p>
+    <ac:structured-macro ac:name="drawio">
+        <ac:parameter ac:name="diagramName">Core-Architecture-Flow</ac:parameter>
+        <ac:parameter ac:name="diagramWidth">1200</ac:parameter>
+        <ac:parameter ac:name="height">600</ac:parameter>
+    </ac:structured-macro>
+</p>
+<p>
+    <ac:image>
+        <ri:attachment ri:filename="payment_flow_v2.png"/>
+    </ac:image>
+</p>
+
+<h2>3. Interactive Prototypes &amp; Embeds</h2>
+<ac:structured-macro ac:name="widget">
+    <ac:parameter ac:name="url">https://www.figma.com/file/SampleFigma123/Checkout-Flow</ac:parameter>
+</ac:structured-macro>
+
+<h2>4. Technical Payload Schemas</h2>
+<ac:structured-macro ac:name="code">
+    <ac:parameter ac:name="language">json</ac:parameter>
+    <ac:plain-text-body><![CDATA[{
+  "transaction_id": "tx_99881100",
+  "account_id": "acc_001928",
+  "amount": 500000,
+  "currency": "USD",
+  "status": "SETTLED"
+}]]></ac:plain-text-body>
+</ac:structured-macro>
+
+<h2>5. Configuration Matrix (Nested Tables)</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Config Group</th>
+            <th>Settings &amp; Fallbacks</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Retry Policy</td>
+            <td>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>max_retries</td>
+                            <td>3</td>
+                        </tr>
+                        <tr>
+                            <td>backoff_seconds</td>
+                            <td>5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>6. Related Documentation Links</h2>
+<p>
+    Refer to: <ac:link><ri:page ri:content-title="Security Architecture Guidelines"/></ac:link>
+</p>
+
+<h2>7. Delivery Action Items</h2>
+<ac:task-list>
+    <ac:task>
+        <ac:task-status>complete</ac:task-status>
+        <ac:task-body>Finalize ISO-20022 message payload format</ac:task-body>
+    </ac:task>
+    <ac:task>
+        <ac:task-status>incomplete</ac:task-status>
+        <ac:task-body>Conduct automated performance load testing for 1,000 RPS</ac:task-body>
+    </ac:task>
+    <ac:task>
+        <ac:task-status>incomplete</ac:task-status>
+        <ac:task-body>Complete security threat modeling sign-off</ac:task-body>
+    </ac:task>
+</ac:task-list>

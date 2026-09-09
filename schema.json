@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConfluencePRDConverterConfig",
+  "description": "Configuration schema for Confluence PRD Converter MCP Server and AI Agent Skill",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema reference URL"
+    },
+    "confluence": {
+      "type": "object",
+      "description": "Confluence connection and authentication settings",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Base URL of the Confluence instance (e.g. https://wiki.yourcompany.com)"
+        },
+        "pat": {
+          "type": "string",
+          "description": "Personal Access Token or environment variable reference (e.g. ${CONFLUENCE_PAT})"
+        },
+        "verify_ssl": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to verify SSL certificates when connecting to Confluence"
+        },
+        "timeout_seconds": {
+          "type": "number",
+          "default": 30.0,
+          "description": "HTTP request timeout in seconds"
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "Output Markdown and asset resolution settings",
+      "properties": {
+        "default_path": {
+          "type": "string",
+          "default": "./prd.md",
+          "description": "Default output file path for generated Markdown"
+        },
+        "assets_folder": {
+          "type": "string",
+          "default": "assets",
+          "description": "Default folder name for downloaded image assets"
+        },
+        "download_images": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically download image attachments during live page fetch"
+        },
+        "include_comments": {
+          "type": "boolean",
+          "default": true,
+          "description": "Extract and append page discussions and user comments"
+        }
+      }
+    },
+    "formatting": {
+      "type": "object",
+      "description": "Zero-loss DOM and AST formatting rules",
+      "properties": {
+        "preserve_nested_tables": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format nested subtables as compact single-line HTML to avoid breaking outer Markdown tables"
+        },
+        "filter_system_icons": {
+          "type": "boolean",
+          "default": true,
+          "description": "Filter out small Confluence/Jira system icons (epic.svg, viewavatar, default.svg)"
+        },
+        "convert_callouts_to_alerts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Convert info/note/warning/tip panels into GitHub-style alert callouts (> [!NOTE])"
+        },
+        "jira_base_url": {
+          "type": "string",
+          "description": "Fallback base URL for Jira issue links if not auto-detected"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Markdown integrity validation checks",
+      "properties": {
+        "check_broken_tables": {
+          "type": "boolean",
+          "default": true,
+          "description": "Verify table column counts and pipe formatting"
+        },
+        "check_missing_images": {
+          "type": "boolean",
+          "default": true,
+          "description": "Verify that all referenced image assets exist locally"
+        },
+        "check_unescaped_tags": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check for unclosed or unescaped HTML/XML tags"
+        }
+      }
+    }
+  }
+}

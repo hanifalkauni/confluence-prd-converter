@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>[PRD] User Profile & Notification Service</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="styles.css">
+    <script src="confluence.js"></script>
+</head>
+<body class="theme-default wiki-content">
+    <div id="main-content">
+        <div class="breadcrumbs">Home &gt; Projects &gt; Platform Core &gt; PRD</div>
+        <div id="floating-scrollbar"></div>
+        <div class="page-metadata">Created by Tech Lead, last modified on Sep 09, 2026</div>
+
+        <h1 id="title-heading" class="pagetitle">[PRD] User Profile & Notification Service</h1>
+
+        <div class="confluence-information-macro confluence-information-macro-information">
+            <p class="title">Document Overview & Lifecycle</p>
+            <div class="confluence-information-macro-body">
+                <p>This PRD defines technical requirements, API contracts, and user experience for the core profile and omni-channel notifications.</p>
+            </div>
+        </div>
+
+        <div class="confluence-information-macro confluence-information-macro-warning">
+            <div class="confluence-information-macro-body">
+                <p>Security Notice: Strict compliance with data retention, encryption at rest, and PII protection is required.</p>
+            </div>
+        </div>
+
+        <div class="confluence-information-macro confluence-information-macro-tip">
+            <div class="confluence-information-macro-body">
+                <p>Tip: Refer to the shared design system components in Figma before implementing UI widgets.</p>
+            </div>
+        </div>
+
+        <h2>1. Document Metadata</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Jira Epic</td>
+                    <td>
+                        <span class="jira-issue" data-jira-key="PROJ-1042">
+                            <a class="jira-issue-key" href="https://jira.example.com/browse/PROJ-1042">PROJ-1042</a>
+                            <span class="summary">User Profile Revamp & Notification Engine</span>
+                            <span class="aui-lozenge aui-lozenge-current">IN PROGRESS</span>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Target Release</td>
+                    <td><span class="status-macro aui-lozenge aui-lozenge-success">Q4 2026</span></td>
+                </tr>
+                <tr>
+                    <td>Lead Architect</td>
+                    <td>Principal Software Engineer</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>2. Wireframes & Architecture Embeds</h2>
+        <p>Explore interactive prototypes, user journey boards, and architectural diagrams below:</p>
+        <iframe src="https://www.figma.com/embed?embed_host=confluence&url=https%3A%2F%2Fwww.figma.com%2Ffile%2FAbCdEf12345%2FPlatform-Design-System%3Fnode-id%3D10%3A25" width="800" height="450"></iframe>
+        <iframe src="https://miro.com/app/live-embed/uXjVO987654=/?moveToViewport=-500,-300,1000,600" width="800" height="450"></iframe>
+
+        <h2>3. User Stories & Acceptance Criteria</h2>
+        <p>The table below defines core user capabilities with nested criteria tables:</p>
+
+        <table class="wrapped confluenceTable">
+            <thead>
+                <tr>
+                    <th>Story ID</th>
+                    <th>User Story</th>
+                    <th>Acceptance Criteria & Payload Schema</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <span class="jira-issue" data-jira-key="PROJ-1043">
+                            <a class="jira-issue-key" href="https://jira.example.com/browse/PROJ-1043">PROJ-1043</a>
+                        </span>
+                    </td>
+                    <td>As a verified user, I want to update my profile contact details securely.</td>
+                    <td>
+                        <table class="subtable">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Validation Rule</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Full Name</td>
+                                    <td>Max 100 characters, alphanumeric only</td>
+                                </tr>
+                                <tr>
+                                    <td>Phone Number</td>
+                                    <td>E.164 international format (+123...) with 2FA confirmation</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td><span class="aui-lozenge aui-lozenge-complete">DONE</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="jira-issue" data-jira-key="PROJ-1044">
+                            <a class="jira-issue-key" href="https://jira.example.com/browse/PROJ-1044">PROJ-1044</a>
+                        </span>
+                    </td>
+                    <td>As a security officer, I want immutable audit logging for all account modifications.</td>
+                    <td>
+                        <table class="subtable">
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Captured Attributes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>USER_PROFILE_UPDATED</td>
+                                    <td>user_id, timestamp_utc, changed_keys, source_ip</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td><span class="aui-lozenge aui-lozenge-current">IN PROGRESS</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>4. UI Mockups & Diagrams</h2>
+        <p>Visual preview mockups:</p>
+        <p>
+            <img src="epic.svg" alt="icon"> <!-- System icon: must be filtered out -->
+            <img src="download/attachments/1766097385/profile_main_view.png" alt="Profile Main View Screen" width="600">
+            <img src="download/attachments/1766097385/edit_modal_dialog.png" alt="Edit Modal Dialog" width="600">
+        </p>
+
+        <h2>5. Technical Specifications & Database Schema</h2>
+        <div class="expand-container">
+            <div class="expand-control"><span class="expand-control-text">Click to view Database Schema Definition</span></div>
+            <div class="expand-content">
+                <div class="code panel pdl">
+                    <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: sql;">
+CREATE TABLE user_profiles (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(20),
+    is_verified BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+                    </pre>
+                </div>
+            </div>
+        </div>
+
+        <h2>6. Rollout & Verification Checklist</h2>
+        <ul class="inline-task-list">
+            <li class="checked">API contract finalized with backend engineering</li>
+            <li class="checked">Figma design review and asset handoff completed</li>
+            <li class="">Perform automated security penetration testing</li>
+            <li class="">Deploy release bundle to Staging environment</li>
+        </ul>
+
+        <div id="comments-section" class="pageSection group">
+            <div class="section-header"><h2>Comments</h2></div>
+            <div class="comment">
+                <div class="comment-header">
+                    <a class="url fn">Alex Morgan (Tech Lead)</a>
+                    <span class="comment-date">2026-03-15 10:30:00 UTC</span>
+                </div>
+                <div class="wiki-content comment-body">
+                    <p>Please note that for phone number validation, E.164 standard formatting must be strictly enforced before storing in the database.</p>
+                </div>
+            </div>
+            <div class="comment">
+                <div class="comment-header">
+                    <a class="url fn">Sarah Jenkins (Security)</a>
+                    <span class="comment-date">2026-03-15 14:20:00 UTC</span>
+                </div>
+                <div class="wiki-content comment-body">
+                    <p>Aligned with InfoSec. Audit log table must retain records for a minimum of 365 days in cold storage.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

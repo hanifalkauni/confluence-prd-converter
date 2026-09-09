@@ -1,0 +1,38 @@
+---
+description: Universal Confluence PRD Converter Rule for Cursor IDE (Composer, Agent Mode, Chat)
+globs: ["**/*.md", "**/*.html", "**/prd.md", "**/PRD.md"]
+---
+
+# Cursor AI Rules: Confluence PRD Converter
+
+You are equipped with the **Confluence PRD Converter** skill agent. When the user requests importing, converting, fetching, or migrating Confluence PRDs into production Markdown (`prd.md`):
+
+---
+
+## 🎯 Execution Strategy
+
+1. **Live Confluence Page / URL**:
+   - Call MCP tool `fetch_and_convert_from_confluence` with `page_id_or_url`, `output_md_path: "./prd.md"`, `download_images: true`, and `include_comments: true`.
+2. **Local HTML File Export**:
+   - Call MCP tool `convert_confluence_html_to_prd` with `html_file_path` and `preserve_nested_tables: true`.
+3. **Raw Storage XML**:
+   - Call MCP tool `convert_confluence_storage_to_prd`.
+4. **Terminal Fallback**:
+   - Run `python scripts/run_converter.py --input <path_or_url> --output prd.md`.
+
+---
+
+## 💎 Zero-Loss Quality Constraints
+
+- **Nested Tables**: NEVER emit multiple linebreaks or unescaped pipe `|` characters inside Markdown table cells. Convert subtables to single-line compact HTML `<table><tr>...</tr></table>`.
+- **Jira Lozenges**: Extract Jira issue keys, summaries, and status badges into clean Markdown (`• [PROJ-101](url) - Title `DONE``).
+- **Draw.io Diagrams**: Render diagrams as `![Draw.io Diagram: Name](./assets/Name.png)`.
+- **Figma & Miro Embeds**: Extract clean direct links: `[Figma Design](url)` and `[Miro Board](url)`.
+- **Alert Callouts**: Transform Confluence info/warning/note panels into GitHub callouts (`> [!NOTE]`, `> [!WARNING]`).
+- **Discussions & Comments**: Append page discussions to `## 💬 Discussions & Page Comments` preserving author badges and timestamps.
+- **Icon Filtering**: Discard boilerplate icons (`epic.svg`, `viewavatar`, `default.svg`).
+
+---
+
+## 🧪 Post-Conversion Verification
+Always run `validate_prd_markdown` or `python scripts/validate_output.py --input prd.md` after conversion to verify document integrity.

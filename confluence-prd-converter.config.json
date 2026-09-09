@@ -1,0 +1,26 @@
+{
+  "$schema": "./schema.json",
+  "confluence": {
+    "url": "https://wiki.yourcompany.com",
+    "pat": "${CONFLUENCE_PAT}",
+    "verify_ssl": true,
+    "timeout_seconds": 30.0
+  },
+  "output": {
+    "default_path": "./prd.md",
+    "assets_folder": "assets",
+    "download_images": true,
+    "include_comments": true
+  },
+  "formatting": {
+    "preserve_nested_tables": true,
+    "filter_system_icons": true,
+    "convert_callouts_to_alerts": true,
+    "jira_base_url": "https://jira.yourcompany.com"
+  },
+  "validation": {
+    "check_broken_tables": true,
+    "check_missing_images": true,
+    "check_unescaped_tags": true
+  }
+}

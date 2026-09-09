@@ -1,0 +1,202 @@
+<div align="center">
+
+# 📑 Confluence PRD Converter
+
+**Universal AI Agent Skill & Custom MCP Server for Automated, Zero-Loss Confluence PRD Conversion to Production Markdown (`prd.md`)**
+
+[![MCP Protocol](https://img.shields.io/badge/MCP-2.0-blue.svg?style=flat-square)](https://modelcontextprotocol.io/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Cross Agent](https://img.shields.io/badge/Cross--Agent-Compatible-7aa2f7?style=flat-square)](https://github.com/hanifalkauni/confluence-prd-converter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+
+[English](README.md) • [Bahasa Indonesia](README.id.md)
+
+</div>
+
+---
+
+## 🌟 Overview & Problem Statement
+
+In agile software development, **PRD (Product Requirement Document)** pages in Confluence contain complex, multi-layered information:
+- **Jira Issue macros** with dynamic status lozenges (`IN PROGRESS`, `DONE`, `BACKLOG`)
+- **Nested tables** (tables inside cells for acceptance criteria, data tracking schemas, and master config)
+- **Embedded interactive prototypes** from Figma and Miro
+- **Dozens of mockup diagrams** and architecture screenshots
+- **Security matrices** (ITPF / STRIDE Threat Modeling)
+
+When exporting or migrating these documents to standard Markdown manually or via basic converters:
+1. ❌ **Broken Tables**: Markdown lacks native nested table syntax; cell linebreaks shatter outer table rows.
+2. ❌ **Lost Metadata**: Jira lozenges and macros turn into ugly HTML tags or disappear.
+3. ❌ **Unclickable Embeds**: Figma and Miro iframes fail to extract clean URLs.
+4. ❌ **Broken Assets**: Image links fail to resolve to local asset directories.
+5. ❌ **Repetitive Scratch Scripts**: Agents spend valuable context windows repeatedly writing Python scripts for conversion.
+
+**`confluence-prd-converter`** solves this permanently by combining an **Open FastMCP Server** and a **Universal Agent Skill** that execute zero-loss, deterministic conversions in a single prompt across any AI assistant.
+
+---
+
+## 🏗️ Architecture & Execution Flow
+
+```mermaid
+graph TD
+    UserReq["User Prompt: 'Fetch and convert Confluence PRD to prd.md'"] --> AgentSkill["Universal Agent Skill (SKILL.md)"]
+    AgentSkill --> Platform{"Target Agent Platform:<br>• Google Antigravity<br>• Claude Code / Desktop<br>• Cursor / Windsurf<br>• Cline / Roo Code / Terminal"}
+    
+    Platform --> DetectInput{"Input Detection:<br>1. Live Confluence URL / Page ID<br>2. Local HTML Export<br>3. Confluence Storage XML"}
+    
+    DetectInput -->|URL / Page ID| LiveTool["fetch_and_convert_from_confluence"]
+    DetectInput -->|Local HTML| HtmlTool["convert_confluence_html_to_prd"]
+    DetectInput -->|Storage XML| XmlTool["convert_confluence_storage_to_prd"]
+
+    subgraph "Custom MCP Server & Engine"
+        LiveTool --> ConfluenceClient["Confluence REST Client<br>(Auth via CONFLUENCE_PAT)"]
+        HtmlTool --> CoreParser["Core DOM & AST Parser"]
+        XmlTool --> CoreParser
+        ConfluenceClient --> CoreParser
+        
+        CoreParser --> DOMCleaner["DOM & UI Cleaner"]
+        CoreParser --> TableEngine["Nested Table Formatter<br>(Compact Single-Line HTML)"]
+        CoreParser --> MacroEngine["Jira, Miro, Figma Extractor"]
+        CoreParser --> AssetMapper["Asset & Image Resolver"]
+    end
+
+    CoreParser --> FinalMD["Output: prd.md (Zero-Loss)"]
+    AgentSkill --> Validator["validate_prd_markdown (Integrity Report)"]
+```
+
+---
+
+## ✨ Key Capabilities & Zero-Loss Standards
+
+### 1. 📊 Compact Nested Table Engine
+Sub-tables inside table cells are converted into compact single-line HTML `<table>` elements with inner linebreaks converted to `<br>`, preserving strict Markdown table rows.
+
+### 2. 🎫 Jira Macro & Lozenge Resolution
+Extracts Jira keys, summaries, URLs, and status badges into clean Markdown:
+```markdown
+• [CITA-1042](https://jira.../browse/CITA-1042) - Profile Revamp `IN PROGRESS`
+```
+
+### 3. 🎨 Figma & Miro Embed Extraction
+Decodes complex iframe source URLs to direct links:
+```markdown
+[Figma Design](https://www.figma.com/file/...)
+[Miro Board](https://miro.com/app/board/...)
+```
+
+### 4. 🖼️ Smart Asset Mapping & Icon Filtering
+Automatically downloads attachments from live pages or maps local `./[name]_files/` directories while stripping noisy system icons (`epic.svg`, `viewavatar`, `default.svg`).
+
+### 5. 💡 GitHub Alert Panels
+Transforms Confluence info/warning/note/tip panels into standard GitHub callouts:
+```markdown
+> [!NOTE]
+> **Document Status**
+> This PRD is currently under active review.
+```
+
+### 6. 💬 Discussion & Comment Extraction
+Automatically captures stakeholder feedback, reviewer comments, and architectural decisions into a structured `## 💬 Discussions & Page Comments` section, preserving author names, timestamps, user mentions, and formatting.
+
+---
+
+## 🛠️ MCP Tool Reference
+
+| Tool Name | Description | Key Parameters |
+| :--- | :--- | :--- |
+| `fetch_and_convert_from_confluence` | Live fetch from Confluence by URL or Page ID, downloads image attachments, extracts comments, and outputs `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `assets_folder_name` |
+| `convert_confluence_html_to_prd` | Converts local Confluence exported `.html` file to structured Markdown. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `assets_folder_name` |
+| `convert_confluence_storage_to_prd` | Converts raw XML/XHTML Storage Format (`body.storage.value`) directly to Markdown. | `storage_xml_content`, `output_md_path`, `assets_folder_name` |
+| `validate_prd_markdown` | Inspects `prd.md` for broken tables, missing images, unparsed tags, and compiles statistics. | `md_file_path` |
+
+---
+
+## 🔌 Multi-Agent Integration Guide
+
+### 1. Google Antigravity IDE
+
+Add to your `mcp_config.json` (`~/.gemini/config/mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "confluence-prd-converter": {
+      "command": "python",
+      "args": [
+        "c:/MyProject/skill-agent/confluence-prd-converter/server.py"
+      ],
+      "env": {
+        "CONFLUENCE_URL": "https://wiki.yourcompany.com",
+        "CONFLUENCE_PAT": "YOUR_PERSONAL_ACCESS_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Place `SKILL.md` in `.agents/skills/confluence-prd-converter/SKILL.md`.
+
+---
+
+### 2. Claude Code & Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "confluence-prd-converter": {
+      "command": "python",
+      "args": ["/absolute/path/to/confluence-prd-converter/server.py"],
+      "env": {
+        "CONFLUENCE_URL": "https://wiki.yourcompany.com",
+        "CONFLUENCE_PAT": "YOUR_PERSONAL_ACCESS_TOKEN"
+      }
+    }
+  }
+}
+```
+
+---
+
+### 3. Cursor & Windsurf IDE
+
+In **Cursor Settings -> Features -> MCP Servers** or Windsurf `mcp_config.json`:
+- **Type**: `command`
+- **Command**: `python c:/MyProject/skill-agent/confluence-prd-converter/server.py`
+- **Environment Variables**: `CONFLUENCE_URL`, `CONFLUENCE_PAT`
+
+---
+
+### 4. Standalone Terminal / Non-MCP Agents (CLI Runner)
+
+Convert local HTML:
+```bash
+python scripts/run_converter.py --input ./PRD_Export.html --output ./prd.md
+```
+
+Live fetch from Confluence URL:
+```bash
+python scripts/run_converter.py --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
+```
+
+Validate markdown integrity:
+```bash
+python scripts/validate_output.py --input ./prd.md
+```
+
+---
+
+## 🧪 Testing & Verification
+
+Run the full unit test suite:
+
+```bash
+python tests/test_all.py
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

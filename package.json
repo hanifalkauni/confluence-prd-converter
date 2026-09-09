@@ -1,0 +1,62 @@
+{
+  "name": "confluence-prd-converter",
+  "version": "1.0.0",
+  "description": "Universal MCP Server and Multi-Agent Skill to fetch, parse, and convert Confluence PRD pages or local HTML exports into pristine prd.md documentation with full nested table support, Jira links, Miro/Figma embeds, and asset resolution.",
+  "type": "module",
+  "main": "server.py",
+  "bin": {
+    "confluence-prd-converter": "./bin/confluence-prd-converter.js"
+  },
+  "files": [
+    "server.py",
+    "core",
+    "adapters",
+    "scripts",
+    "references",
+    "evaluations",
+    "bin",
+    "requirements.txt",
+    "confluence-prd-converter.config.json",
+    "schema.json",
+    "SKILL.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "README.md",
+    "README.id.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hanifalkauni/confluence-prd-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hanifalkauni/confluence-prd-converter/issues"
+  },
+  "homepage": "https://github.com/hanifalkauni/confluence-prd-converter#readme",
+  "scripts": {
+    "start": "python server.py",
+    "mcp": "python server.py",
+    "test": "python tests/test_all.py"
+  },
+  "keywords": [
+    "confluence",
+    "prd",
+    "ai-agent",
+    "mcp",
+    "fastmcp",
+    "markdown-converter",
+    "jira",
+    "figma",
+    "miro",
+    "antigravity",
+    "claude",
+    "cursor",
+    "windsurf",
+    "cline"
+  ],
+  "author": "Hanif Al-Kauni",
+  "license": "MIT"
+}
