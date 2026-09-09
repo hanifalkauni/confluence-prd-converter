@@ -266,6 +266,36 @@ python scripts/validate_output.py --input ./prd.md
 
 ---
 
+## 📂 Repository Layout
+
+```
+confluence-prd-converter/
+├── server.py                        # FastMCP Server (stdio JSON-RPC for AI IDEs)
+├── SKILL.md                         # Universal Agent Skill definition
+├── core/                            # Core parsing & transformation engine
+│   ├── confluence_client.py         # REST API client & attachment/comment fetcher
+│   ├── parser.py                    # Unified AST parser (Storage XML & View HTML)
+│   ├── formatters.py                # Nested tables, Jira lozenges, embeds, alert callouts
+│   ├── clean.py                     # DOM sanitizer & system icon filter
+│   └── validator.py                 # Structural Markdown integrity validator
+├── adapters/                        # Rule & skill adapters for 8+ AI Agent IDEs
+│   ├── antigravity/                 # Google Antigravity & Gemini CLI
+│   ├── claude/                      # Claude Code & Claude Desktop
+│   ├── cursor/                      # Cursor IDE (.cursor/rules/)
+│   ├── windsurf/                    # Windsurf Cascade (.windsurf/rules/)
+│   ├── cline/                       # Cline & Roo Code (.clinerules/)
+│   ├── copilot/                     # GitHub Copilot (.github/)
+│   ├── kiro/                        # Kiro Steering (.kiro/steering/)
+│   └── continue/                    # Continue.dev (.continue/rules/)
+├── evaluations/                     # Evaluation & Feedback Hub (RFCs & study cases)
+├── scripts/                         # Standalone CLI tools (run_converter, validate_output)
+├── tests/                           # Unit test suite & generalized sample fixtures
+├── schema.json                      # Configuration JSON Schema
+└── confluence-prd-converter.config.json # Project configuration file
+```
+
+---
+
 ## 🧪 Testing & Verification
 
 Run the full unit test suite:

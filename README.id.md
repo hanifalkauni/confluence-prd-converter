@@ -266,6 +266,36 @@ python scripts/validate_output.py --input ./prd.md
 
 ---
 
+## 📂 Struktur Repositori
+
+```
+confluence-prd-converter/
+├── server.py                        # Server FastMCP (stdio JSON-RPC untuk AI IDE)
+├── SKILL.md                         # Definisi Master Universal Agent Skill
+├── core/                            # Engine utama parsing & transformasi
+│   ├── confluence_client.py         # REST API client & attachment/comment fetcher
+│   ├── parser.py                    # Unified AST parser (Storage XML & View HTML)
+│   ├── formatters.py                # Nested table compact HTML, Jira lozenges, alert callouts
+│   ├── clean.py                     # DOM sanitizer & filter icon sistem
+│   └── validator.py                 # Validator integritas struktur Markdown
+├── adapters/                        # Rule & skill adapter untuk 8+ AI Agent IDE
+│   ├── antigravity/                 # Google Antigravity & Gemini CLI
+│   ├── claude/                      # Claude Code & Claude Desktop
+│   ├── cursor/                      # Cursor IDE (.cursor/rules/)
+│   ├── windsurf/                    # Windsurf Cascade (.windsurf/rules/)
+│   ├── cline/                       # Cline & Roo Code (.clinerules/)
+│   ├── copilot/                     # GitHub Copilot (.github/)
+│   ├── kiro/                        # Kiro Steering (.kiro/steering/)
+│   └── continue/                    # Continue.dev (.continue/rules/)
+├── evaluations/                     # Evaluation & Feedback Hub (RFC & studi kasus)
+├── scripts/                         # Skrip CLI mandiri (run_converter, validate_output)
+├── tests/                           # Unit test suite & fixture sample general
+├── schema.json                      # JSON Schema konfigurasi
+└── confluence-prd-converter.config.json # File konfigurasi proyek
+```
+
+---
+
 ## 🧪 Pengujian & Verifikasi
 
 Jalankan seluruh test suite unit test:
