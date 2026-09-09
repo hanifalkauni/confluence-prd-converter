@@ -54,7 +54,9 @@ if (command === "init") {
     { src: join(adaptersDir, "cursor", "confluence-prd-converter.mdc"), dest: join(cwd, ".cursor", "rules", "confluence-prd-converter.mdc") },
     { src: join(adaptersDir, "windsurf", "windsurfrules.md"), dest: join(cwd, ".windsurf", "rules", "confluence-prd-converter.md") },
     { src: join(adaptersDir, "cline", "clinerules.md"), dest: join(cwd, ".clinerules", "confluence-prd-converter.md") },
-    { src: join(adaptersDir, "copilot", "copilot-instructions.md"), dest: join(cwd, ".github", "copilot-instructions.md") }
+    { src: join(adaptersDir, "copilot", "copilot-instructions.md"), dest: join(cwd, ".github", "copilot-instructions.md") },
+    { src: join(adaptersDir, "kiro", "steering.md"), dest: join(cwd, ".kiro", "steering", "confluence-prd-converter.md") },
+    { src: join(adaptersDir, "continue", "prompt.md"), dest: join(cwd, ".continue", "rules", "confluence-prd-converter.md") }
   ];
 
   let installed = 0;

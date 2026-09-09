@@ -222,6 +222,28 @@ cp adapters/copilot/copilot-instructions.md .github/copilot-instructions.md
 
 </details>
 
+<details>
+<summary><b>🎯 Kiro</b></summary>
+
+Add steering instructions to `.kiro/steering/`:
+```bash
+mkdir -p .kiro/steering
+cp adapters/kiro/steering.md .kiro/steering/confluence-prd-converter.md
+```
+
+</details>
+
+<details>
+<summary><b>⏩ Continue.dev</b></summary>
+
+Add prompt rule to `.continue/rules/`:
+```bash
+mkdir -p .continue/rules
+cp adapters/continue/prompt.md .continue/rules/confluence-prd-converter.md
+```
+
+</details>
+
 ---
 
 ### 💻 Method C: Standalone Terminal CLI Runner
