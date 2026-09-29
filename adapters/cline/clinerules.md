@@ -1,26 +1,64 @@
-# Cline & Roo Code Rules: Confluence PRD Converter
+# 📑 Cline & Roo Code Rules: Confluence PRD Converter
 
-You are equipped with the **Confluence PRD Converter** toolset. When converting Confluence PRDs or HTML exports to Markdown:
-
----
-
-## 🛠️ Execution Protocol
-
-1. **Live Confluence Page**:
-   - Call tool `fetch_and_convert_from_confluence` with `page_id_or_url`, `output_md_path="./prd.md"`, `download_images=True`, `include_comments=True`.
-2. **Local HTML File**:
-   - Call tool `convert_confluence_html_to_prd` with `html_file_path` and `preserve_nested_tables=True`.
-3. **CLI Execution**:
-   - Run `python scripts/run_converter.py --input <path_or_url> --output prd.md`.
+You are equipped with the **Confluence PRD Converter** skill and FastMCP Server. Follow this protocol when fetching, parsing, converting, or migrating Confluence PRDs and technical requirement documents into production-grade Markdown (`prd.md`) with a Zero-Loss Guarantee.
 
 ---
 
-## 💎 Zero-Loss Formatting Requirements
+## 🎯 When to Activate
+Activate this protocol whenever the user:
+- Requests converting, migrating, or fetching a PRD from Confluence into Markdown (`prd.md`).
+- Provides a Confluence URL (e.g., `https://wiki.../pages/viewpage.action?pageId=12345` or `display/SPACE/Title`).
+- Provides a Confluence numeric Page ID (e.g., `1776167017`).
+- Provides a local Confluence exported `.html` file with an accompanying `_files/` assets directory.
+- Requests a tableless plain text / narrative representation of a Confluence PRD.
+- Requests integrity validation of an existing PRD Markdown file.
 
-- **Sub-Tables**: Convert nested tables inside cells to single-line HTML `<table>` elements with `<br>` line breaks to prevent Markdown row collapse.
-- **Jira Status Lozenges**: Format as `• [KEY](url) - Summary `Status``.
-- **Diagrams & Mockups**: Map Draw.io diagrams and downloaded images to `./assets/`. Discard system icons (`epic.svg`, etc.).
-- **Embeds**: Extract iframe source URLs for Figma and Miro to direct clickable links.
-- **Alert Callouts**: Format note/warning/tip panels to GitHub alerts (`> [!NOTE]`, `> [!WARNING]`).
-- **Discussions & Comments**: Format page discussions to `## 💬 Discussions & Page Comments`.
-- **Validation**: Call `validate_prd_markdown` on output file.
+---
+
+## ⚡ MCP Tool Reference
+
+| Tool Name | Key Parameters | Purpose |
+| :--- | :--- | :--- |
+| `fetch_and_convert_from_confluence` | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode`, `assets_folder_name` | Live fetch Confluence page, download image attachments, extract comments, and write `prd.md`. |
+| `convert_confluence_html_to_prd` | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `table_mode`, `assets_folder_name` | Converts exported Confluence `.html` file with nested table protection or tableless format. |
+| `convert_confluence_storage_to_prd` | `storage_xml_content`, `output_md_path`, `table_mode`, `assets_folder_name` | Converts raw Confluence Storage XHTML (`body.storage.value`) directly to Markdown. |
+| `validate_prd_markdown` | `md_file_path` | Validates table syntax, image links, Jira keys, and unescaped tags. |
+
+---
+
+## 🎯 5-Stage Conversion SOP Protocol
+
+### Stage 1: Input & Mode Detection
+1. **Live Confluence Page (URL / Page ID)**:
+   - Call MCP tool `fetch_and_convert_from_confluence`.
+2. **Local HTML Export File**:
+   - Call MCP tool `convert_confluence_html_to_prd`.
+3. **Raw Storage XML Payload**:
+   - Call MCP tool `convert_confluence_storage_to_prd`.
+4. **CLI Fallback (Non-MCP Environments)**:
+   - Run `python scripts/run_converter.py --input <path_or_url> --output prd.md --table-mode <table|text>`.
+
+### Stage 2: Table Mode Strategy Selection
+- **Standard Mode (`table_mode="table"`) (Default)**: Renders strict Markdown tables (`| ... |`) with compact inline HTML sub-tables.
+- **Tableless Mode (`table_mode="text"`) (Optional)**: When the user requests a plain text / non-table representation, all tables are deterministically converted into structured key-value bullet cards without losing any data or context.
+
+### Stage 3: Zero-Loss Formatting Standards
+1. **Table Handling Modes**:
+   - **Standard Table Mode**: Outer tables formatted as `| ... |`. Subtables inside cells converted to compact single-line HTML `<table><tr>...</tr></table>` with `<br>` inner breaks to prevent Markdown row collapse.
+   - **Tableless Plain Text Mode**: Tables converted to hierarchical bullet cards (`- **Property**: Value` or `- **Feature: Name**:\n  - **Field**: ...`) with zero data loss.
+2. **Jira Issues & Status Lozenges**:
+   - Format as `• [KEY](https://jira.../browse/KEY) - Summary `Status``.
+3. **Diagrams & Mockups**:
+   - Map Draw.io diagrams and images to `./assets/`. Filter out system icons (`epic.svg`, `viewavatar`, `default.svg`).
+4. **Interactive Embeds**:
+   - Extract Figma & Miro iframes into direct clickable Markdown links (`[Figma Design](url)`, `[Miro Board](url)`).
+5. **Callout Alert Panels**:
+   - Format note/warning/tip/info panels to GitHub alerts (`> [!NOTE]`, `> [!WARNING]`, `> [!TIP]`, `> [!CAUTION]`).
+6. **Discussions & Comments**:
+   - Extract page discussions into `## 💬 Discussions & Page Comments` with author headers and timestamps.
+
+### Stage 4: Post-Conversion Validation
+Always run `validate_prd_markdown` on the generated file to ensure 0 table errors and 0 missing assets.
+
+### Stage 5: Summary Report Presentation
+Present a structured report: Document Title, Page ID, Output Path, Total Lines/Words, Table Mode, Count of Tables/Cards, Downloaded Images, and Jira Links.

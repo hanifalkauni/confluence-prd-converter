@@ -70,6 +70,12 @@ def main():
         help="Treat input file as Confluence Storage XML"
     )
     parser.add_argument(
+        "--table-mode",
+        choices=["table", "text"],
+        default="table",
+        help="Table conversion mode: 'table' (Markdown table) or 'text' (structured text/list format)"
+    )
+    parser.add_argument(
         "--no-validate",
         action="store_true",
         help="Skip post-conversion markdown validation"
@@ -86,7 +92,7 @@ def main():
 
     # 1. Local HTML or Storage XML File Mode
     if input_path.exists() and input_path.is_file():
-        print(f"[*] Mode: Local File Processing -> '{input_path.name}'")
+        print(f"[*] Mode: Local File Processing -> '{input_path.name}' (Table Mode: {args.table_mode})")
         with open(input_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
 
@@ -94,7 +100,7 @@ def main():
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
         assets_dir_name = args.assets_dir or f"{input_path.stem}_files"
-        parser_engine = ConfluencePRDParser(assets_folder=assets_dir_name)
+        parser_engine = ConfluencePRDParser(assets_folder=assets_dir_name, table_mode=args.table_mode)
 
         if args.storage_xml or input_path.suffix.lower() == ".xml":
             print("[*] Parsing Confluence Storage XML...")
@@ -110,7 +116,7 @@ def main():
 
     # 2. Live Confluence URL or Page ID Mode
     else:
-        print(f"[*] Mode: Live Confluence Fetch -> '{input_val}'")
+        print(f"[*] Mode: Live Confluence Fetch -> '{input_val}' (Table Mode: {args.table_mode})")
         try:
             client = ConfluenceClient(base_url=args.url, pat=args.pat)
             if not client.base_url:
@@ -134,7 +140,7 @@ def main():
                 downloaded = client.download_attachments(page_id, str(local_assets_dir))
                 print(f"[+] Downloaded {len(downloaded)} images.")
 
-            parser_engine = ConfluencePRDParser(assets_folder=assets_dir_name)
+            parser_engine = ConfluencePRDParser(assets_folder=assets_dir_name, table_mode=args.table_mode)
             if page_data.get("storage_xml"):
                 md_out = parser_engine.parse_storage_xml(page_data["storage_xml"], title=title)
             else:

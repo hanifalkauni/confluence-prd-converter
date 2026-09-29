@@ -42,13 +42,15 @@ Activate this skill whenever the user:
     "arguments": {
       "page_id_or_url": "1766097385",
       "output_md_path": "./prd.md",
-      "download_images": true
+      "download_images": true,
+      "table_mode": "table"
     }
   }
   ```
+  *(Note: Set `"table_mode": "text"` if the user prefers tableless plain text/list representation).*
 - **Via CLI Runner**:
   ```bash
-  python scripts/run_converter.py --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output prd.md
+  python scripts/run_converter.py --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output prd.md --table-mode table
   ```
 
 #### Option 2: Local HTML File Conversion
@@ -59,13 +61,14 @@ Activate this skill whenever the user:
     "arguments": {
       "html_file_path": "./PRD_Export.html",
       "output_md_path": "./prd.md",
-      "preserve_nested_tables": true
+      "preserve_nested_tables": true,
+      "table_mode": "table"
     }
   }
   ```
 - **Via CLI Runner**:
   ```bash
-  python scripts/run_converter.py --input "./PRD_Export.html" --output prd.md
+  python scripts/run_converter.py --input "./PRD_Export.html" --output prd.md --table-mode table
   ```
 
 #### Option 3: Raw Storage XML Conversion
@@ -75,7 +78,8 @@ Activate this skill whenever the user:
     "tool": "convert_confluence_storage_to_prd",
     "arguments": {
       "storage_xml_content": "<ac:structured-macro ...>...</ac:structured-macro>",
-      "output_md_path": "./prd.md"
+      "output_md_path": "./prd.md",
+      "table_mode": "table"
     }
   }
   ```
@@ -84,9 +88,12 @@ Activate this skill whenever the user:
 
 ### Stage 3: Element Handling Standards (Zero-Loss Guarantee)
 
-1. **Nested Tables**:
-   - Subtables inside table cells MUST be converted to compact inline HTML (`<table><thead>...</thead><tbody>...</tbody></table>`).
-   - Inner newlines MUST be replaced with `<br>` to maintain strict single-line outer Markdown table rows.
+1. **Table Handling Modes (Tables vs Plain Text)**:
+   - **Mode A: Standard Tables (`table_mode: 'table'`) (Default)**:
+     - Outer tables are formatted as strict Markdown tables (`| ... |`).
+     - Nested subtables inside table cells MUST be converted to compact inline HTML (`<table><thead>...</thead><tbody>...</tbody></table>`) with inner newlines replaced with `<br>` to maintain single-line rows.
+   - **Mode B: Tableless Text Mode (`table_mode: 'text'`) (Optional User Preference)**:
+     - When the user requests a plain text / non-table representation, all tables are deterministically converted into clean, hierarchical key-value lists / bullet cards without losing any column values, status badges, links, or nested context.
 2. **Jira Issue Macros**:
    - Converted to `• [KEY](https://jira.../browse/KEY) - Summary `Status``.
 3. **Figma & Miro Embeds**:

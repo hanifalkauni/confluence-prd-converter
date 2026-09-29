@@ -62,6 +62,12 @@
       "type": "object",
       "description": "Zero-loss DOM and AST formatting rules",
       "properties": {
+        "table_mode": {
+          "type": "string",
+          "enum": ["table", "text"],
+          "default": "table",
+          "description": "Table rendering mode: 'table' (Markdown table) or 'text' (structured text/list format)"
+        },
         "preserve_nested_tables": {
           "type": "boolean",
           "default": true,

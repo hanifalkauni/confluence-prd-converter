@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 from .clean import clean_dom, clean_text, sanitize_html, is_system_icon
 from .formatters import (
     format_nested_table_to_html,
+    format_table_to_text,
     format_jira_macro,
     format_embed_iframe,
     format_callout_panel,
@@ -26,9 +27,15 @@ from .formatters import (
 class ConfluencePRDParser:
     """Core parser transforming Confluence HTML and XML storage formats into Markdown."""
 
-    def __init__(self, assets_folder: str = "assets", preserve_nested_tables: bool = True):
+    def __init__(
+        self,
+        assets_folder: str = "assets",
+        preserve_nested_tables: bool = True,
+        table_mode: str = "table"
+    ):
         self.assets_folder = assets_folder
         self.preserve_nested_tables = preserve_nested_tables
+        self.table_mode = (table_mode or "table").lower()
 
     def parse_html(self, html_content: str, title: Optional[str] = None) -> str:
         """Parse Confluence View/Export HTML content into Markdown."""
@@ -442,6 +449,8 @@ class ConfluencePRDParser:
 
         # Tables
         elif tag_name == "table":
+            if self.table_mode in ["text", "plain", "list", "tableless"]:
+                return "\n\n" + format_table_to_text(node, assets_folder=self.assets_folder) + "\n\n"
             return self._render_markdown_table(node)
 
         # Jira Issue Span
@@ -596,8 +605,11 @@ class ConfluencePRDParser:
             return ""
 
         nested_table = cell_tag.find("table")
-        if nested_table and self.preserve_nested_tables:
-            return format_nested_table_to_html(nested_table)
+        if nested_table:
+            if self.table_mode in ["text", "plain", "list", "tableless"]:
+                return format_table_to_text(nested_table, assets_folder=self.assets_folder, indent_level=1)
+            elif self.preserve_nested_tables:
+                return format_nested_table_to_html(nested_table)
 
         cell_parts = []
         for child in cell_tag.children:

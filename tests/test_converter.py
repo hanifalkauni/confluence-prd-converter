@@ -161,6 +161,48 @@ class TestConfluenceConverter(unittest.TestCase):
         self.assertIn("- [x] Finalize ISO-20022", md_output)
         self.assertIn("- [ ] Conduct automated performance", md_output)
 
+    def test_table_mode_text(self):
+        with open(self.sample_html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        # Parse with table_mode='text'
+        parser = ConfluencePRDParser(assets_folder="assets", table_mode="text")
+        md_output = parser.parse_html(html_content, title="[PRD] User Profile & Notification Service")
+
+        # 1. Verify Title and alerts remain intact
+        self.assertIn("# [PRD] User Profile & Notification Service", md_output)
+        self.assertIn("> [!NOTE]", md_output)
+
+        # 2. Verify no Markdown table pipes remain
+        self.assertNotIn("| --- |", md_output)
+        self.assertNotIn("| Property | Value |", md_output)
+        self.assertNotIn("<table>", md_output)
+
+        # 3. Verify 2-column key-value conversion (Section 1 Metadata)
+        self.assertIn("- **Jira Epic**:", md_output)
+        self.assertIn("- **Target Release**: `Q4 2026`", md_output)
+        self.assertIn("- **Lead Architect**: Principal Software Engineer", md_output)
+
+        # 4. Verify multi-column table to structured text list conversion (Section 3 User Stories)
+        self.assertIn("- **Story ID: [PROJ-1043](https://jira.example.com/browse/PROJ-1043)**", md_output)
+        self.assertIn("- **User Story**: As a verified user, I want to update my profile contact details securely.", md_output)
+        self.assertIn("- **Status**: `DONE`", md_output)
+
+        # 5. Verify nested table converted to indented sub-bullets without data loss
+        self.assertIn("- **Acceptance Criteria & Payload Schema**:", md_output)
+        self.assertIn("- **Full Name**: Max 100 characters, alphanumeric only", md_output)
+        self.assertIn("- **Phone Number**: E.164 international format (+123...) with 2FA confirmation", md_output)
+
+        # 6. Verify Jira lozenges and links in text mode
+        self.assertIn("[PROJ-1042](https://jira.example.com/browse/PROJ-1042)", md_output)
+        self.assertIn("`IN PROGRESS`", md_output)
+
+        # 7. Verify validator passes on tableless markdown
+        validator = PRDValidator()
+        report = validator.validate_content(md_output)
+        self.assertIn(report["status"], ["passed", "warning"])
+        self.assertEqual(report["metrics"]["total_tables"], 0)
+
     def test_validator(self):
         sample_md = """# Sample PRD Document
 

@@ -13,6 +13,7 @@
     "include_comments": true
   },
   "formatting": {
+    "table_mode": "table",
     "preserve_nested_tables": true,
     "filter_system_icons": true,
     "convert_callouts_to_alerts": true,

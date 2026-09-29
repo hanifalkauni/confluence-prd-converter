@@ -69,8 +69,9 @@ graph TD
 
 ## ✨ Fitur Unggulan & Standar Kualitas
 
-### 1. 📊 Penanganan Tabel Bersarang (*Nested Tables*)
-Sub-tabel di dalam sel tabel dikonversi menjadi tag HTML `<table>` mini dalam satu baris dengan *line-break* yang diubah menjadi `<br>`, menjaga struktur pemisah baris tabel Markdown luar tetap utuh.
+### 1. 📊 Penanganan Tabel Bersarang (*Nested Tables*) & Mode Plain Text
+- **Standard Table Mode (`table_mode="table"`)**: Sub-tabel di dalam sel tabel dikonversi menjadi tag HTML `<table>` mini dalam satu baris dengan *line-break* yang diubah menjadi `<br>`, menjaga struktur pemisah baris tabel Markdown luar tetap utuh.
+- **Tableless Text Mode (`table_mode="text"`)**: Untuk kebutuhan user yang menginginkan format teks/narasi tanpa tabel, seluruh tabel dan sub-tabel dikonversi secara deterministik menjadi hierarki kartu bullet / key-value list tanpa mengurangi kelengkapan data maupun konteks.
 
 ### 2. 🎫 Ekstraksi Macro & Lozenge Jira
 Mengambil key, judul issue, link URL, dan status lozenge:
@@ -105,9 +106,9 @@ Mengambil komentar reviewer, catatan InfoSec, dan klarifikasi arsitektur secara 
 
 | Nama Tool | Deskripsi | Parameter Utama |
 | :--- | :--- | :--- |
-| `fetch_and_convert_from_confluence` | Mengambil PRD secara live via URL atau Page ID Confluence, mengunduh gambar lampiran, mengekstrak komentar, dan menghasilkan `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `assets_folder_name` |
-| `convert_confluence_html_to_prd` | Mengonversi file export `.html` lokal Confluence ke format Markdown terstruktur. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `assets_folder_name` |
-| `convert_confluence_storage_to_prd` | Mengonversi raw XML/XHTML Storage Format (`body.storage.value`) langsung ke Markdown. | `storage_xml_content`, `output_md_path`, `assets_folder_name` |
+| `fetch_and_convert_from_confluence` | Mengambil PRD secara live via URL atau Page ID Confluence, mengunduh gambar lampiran, mengekstrak komentar, dan menghasilkan `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode` |
+| `convert_confluence_html_to_prd` | Mengonversi file export `.html` lokal Confluence ke format Markdown terstruktur. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `table_mode` |
+| `convert_confluence_storage_to_prd` | Mengonversi raw XML/XHTML Storage Format (`body.storage.value`) langsung ke Markdown. | `storage_xml_content`, `output_md_path`, `table_mode` |
 | `validate_prd_markdown` | Memeriksa integritas `prd.md` (tabel, link gambar, macro unparsed) dan menghasilkan metrik. | `md_file_path` |
 
 ---

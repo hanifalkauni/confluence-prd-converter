@@ -39,7 +39,8 @@ def fetch_and_convert_from_confluence(
     include_comments: bool = True,
     assets_folder_name: Optional[str] = None,
     confluence_url: Optional[str] = None,
-    confluence_pat: Optional[str] = None
+    confluence_pat: Optional[str] = None,
+    table_mode: str = "table"
 ) -> Dict[str, Any]:
     """
     Fetch a PRD page directly from Confluence (by URL or numeric Page ID), download all image assets,
@@ -53,6 +54,7 @@ def fetch_and_convert_from_confluence(
     - assets_folder_name: Custom subfolder name for image assets (default: auto-detected or 'assets')
     - confluence_url: Optional explicit Confluence base URL (falls back to CONFLUENCE_URL env or mcp_config.json)
     - confluence_pat: Optional explicit Personal Access Token (falls back to CONFLUENCE_PAT env or mcp_config.json)
+    - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
         out_file = Path(output_md_path).resolve()
@@ -85,7 +87,7 @@ def fetch_and_convert_from_confluence(
             total_downloaded = len(downloaded)
 
         # Parse document (prefer Storage XML if available, fallback to View HTML)
-        parser = ConfluencePRDParser(assets_folder=assets_dir_name)
+        parser = ConfluencePRDParser(assets_folder=assets_dir_name, table_mode=table_mode)
         if storage_xml:
             md_content = parser.parse_storage_xml(storage_xml, title=title)
         else:
@@ -115,6 +117,7 @@ def fetch_and_convert_from_confluence(
             "title": title,
             "output_file": str(out_file).replace("\\", "/"),
             "assets_folder": str(local_assets_dir).replace("\\", "/"),
+            "table_mode": table_mode,
             "total_images_downloaded": total_downloaded,
             "total_comments_included": total_comments,
             "total_lines": len(md_content.splitlines()),
@@ -134,7 +137,8 @@ def convert_confluence_html_to_prd(
     html_file_path: str,
     output_md_path: Optional[str] = None,
     assets_folder_name: Optional[str] = None,
-    preserve_nested_tables: bool = True
+    preserve_nested_tables: bool = True,
+    table_mode: str = "table"
 ) -> Dict[str, Any]:
     """
     Convert an exported local Confluence HTML file into a clean, production-grade prd.md file.
@@ -144,6 +148,7 @@ def convert_confluence_html_to_prd(
     - output_md_path: Target path for the generated prd.md (default: 'prd.md' in the same folder)
     - assets_folder_name: Relative assets folder name (auto-detected from HTML name or 'assets' if omitted)
     - preserve_nested_tables: Whether to convert sub-tables into compact inline HTML tables (default: true)
+    - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
         src_path = Path(html_file_path).resolve()
@@ -184,7 +189,8 @@ def convert_confluence_html_to_prd(
         # Parse HTML
         parser = ConfluencePRDParser(
             assets_folder=chosen_folder,
-            preserve_nested_tables=preserve_nested_tables
+            preserve_nested_tables=preserve_nested_tables,
+            table_mode=table_mode
         )
         md_content = parser.parse_html(html_content, title=src_path.stem)
 
@@ -201,6 +207,7 @@ def convert_confluence_html_to_prd(
             "source_html": str(src_path).replace("\\", "/"),
             "output_file": str(out_file).replace("\\", "/"),
             "assets_folder": chosen_folder,
+            "table_mode": table_mode,
             "total_lines": len(md_content.splitlines()),
             "validation": val_report
         }
@@ -217,7 +224,8 @@ def convert_confluence_html_to_prd(
 def convert_confluence_storage_to_prd(
     storage_xml_content: str,
     output_md_path: Optional[str] = None,
-    assets_folder_name: Optional[str] = None
+    assets_folder_name: Optional[str] = None,
+    table_mode: str = "table"
 ) -> Dict[str, Any]:
     """
     Convert raw Confluence Storage Format (XHTML payload from Confluence API body.storage.value) into Markdown.
@@ -226,10 +234,11 @@ def convert_confluence_storage_to_prd(
     - storage_xml_content: The raw XML/XHTML string from Confluence API response
     - output_md_path: Optional file path to write the result (if omitted, returned directly in response)
     - assets_folder_name: Subfolder name for image references (default: 'assets')
+    - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
         assets_folder = assets_folder_name or "assets"
-        parser = ConfluencePRDParser(assets_folder=assets_folder)
+        parser = ConfluencePRDParser(assets_folder=assets_folder, table_mode=table_mode)
         md_content = parser.parse_storage_xml(storage_xml_content)
 
         output_file_str = None
@@ -246,6 +255,7 @@ def convert_confluence_storage_to_prd(
         return {
             "status": "success",
             "output_file": output_file_str,
+            "table_mode": table_mode,
             "markdown_content": md_content if not output_file_str else None,
             "total_lines": len(md_content.splitlines()),
             "validation": val_report

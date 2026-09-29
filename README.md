@@ -69,8 +69,9 @@ graph TD
 
 ## ✨ Key Capabilities & Zero-Loss Standards
 
-### 1. 📊 Compact Nested Table Engine
-Sub-tables inside table cells are converted into compact single-line HTML `<table>` elements with inner linebreaks converted to `<br>`, preserving strict Markdown table rows.
+### 1. 📊 Compact Nested Table & Tableless Text Engine
+- **Standard Table Mode (`table_mode="table"`)**: Sub-tables inside table cells are converted into compact single-line HTML `<table>` elements with inner linebreaks converted to `<br>`, preserving strict Markdown table rows.
+- **Tableless Text Mode (`table_mode="text"`)**: For users preferring non-table plain text representations, all tables and nested matrices are deterministically converted into structured key-value bullet cards without losing any data or context.
 
 ### 2. 🎫 Jira Macro & Lozenge Resolution
 Extracts Jira keys, summaries, URLs, and status badges into clean Markdown:
@@ -105,9 +106,9 @@ Automatically captures stakeholder feedback, reviewer comments, and architectura
 
 | Tool Name | Description | Key Parameters |
 | :--- | :--- | :--- |
-| `fetch_and_convert_from_confluence` | Live fetch from Confluence by URL or Page ID, downloads image attachments, extracts comments, and outputs `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `assets_folder_name` |
-| `convert_confluence_html_to_prd` | Converts local Confluence exported `.html` file to structured Markdown. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `assets_folder_name` |
-| `convert_confluence_storage_to_prd` | Converts raw XML/XHTML Storage Format (`body.storage.value`) directly to Markdown. | `storage_xml_content`, `output_md_path`, `assets_folder_name` |
+| `fetch_and_convert_from_confluence` | Live fetch from Confluence by URL or Page ID, downloads image attachments, extracts comments, and outputs `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode` |
+| `convert_confluence_html_to_prd` | Converts local Confluence exported `.html` file to structured Markdown. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `table_mode` |
+| `convert_confluence_storage_to_prd` | Converts raw XML/XHTML Storage Format (`body.storage.value`) directly to Markdown. | `storage_xml_content`, `output_md_path`, `table_mode` |
 | `validate_prd_markdown` | Inspects `prd.md` for broken tables, missing images, unparsed tags, and compiles statistics. | `md_file_path` |
 
 ---

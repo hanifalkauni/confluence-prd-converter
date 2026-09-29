@@ -58,6 +58,217 @@ def format_nested_table_to_html(table_tag: Tag) -> str:
     return f"<table>{table_content}</table>"
 
 
+def clean_header_label(label: str) -> str:
+    """Normalize header text for key-value display."""
+    if not label:
+        return ""
+    clean = clean_text(label).replace("\n", " ").strip()
+    clean = re.sub(r"^\*\*|\*\*$", "", clean).strip()
+    clean = re.sub(r":$", "", clean).strip()
+    return clean
+
+
+def cell_to_plain_text(cell_tag: Tag, assets_folder: str = "assets", indent_level: int = 0) -> str:
+    """
+    Convert cell contents into clean Markdown text, preserving links, code, images,
+    lists, lozenges, and formatting nested tables as sub-lists.
+    """
+    if not cell_tag:
+        return ""
+
+    prefix = "  " * indent_level
+    parts = []
+
+    for child in cell_tag.children:
+        if isinstance(child, str):
+            t = clean_text(child).strip()
+            if t:
+                parts.append(t)
+        elif isinstance(child, Tag):
+            tag_name = child.name.lower()
+            if tag_name in ["script", "style"]:
+                continue
+            elif tag_name == "br":
+                parts.append("\n" + prefix)
+            elif tag_name in ["b", "strong"]:
+                inner = cell_to_plain_text(child, assets_folder, indent_level).strip()
+                if inner:
+                    parts.append(f"**{inner}**")
+            elif tag_name in ["i", "em"]:
+                inner = cell_to_plain_text(child, assets_folder, indent_level).strip()
+                if inner:
+                    parts.append(f"*{inner}*")
+            elif tag_name == "code":
+                parts.append(f"`{clean_text(child.get_text()).strip()}`")
+            elif tag_name == "a":
+                href = child.get("href", "#")
+                link_text = cell_to_plain_text(child, assets_folder, indent_level).strip() or href
+                if "user-mention" in child.get("class", []) or "confluence-userlink" in child.get("class", []):
+                    parts.append(f"@{link_text}")
+                else:
+                    parts.append(f"[{link_text}]({href})")
+            elif tag_name == "span" and "jira-issue" in (child.get("class", []) if isinstance(child.get("class", []), list) else str(child.get("class", "")).split()):
+                parts.append(format_jira_macro(child))
+            elif tag_name == "span" and any(c in (child.get("class", []) if isinstance(child.get("class", []), list) else str(child.get("class", "")).split()) for c in ["aui-lozenge", "status-macro", "jira-status-lozenge"]):
+                status_text = clean_text(child.get_text()).strip()
+                parts.append(f"`{status_text}`")
+            elif tag_name == "img":
+                img_md = resolve_image_tag(child, assets_folder)
+                if img_md:
+                    parts.append(img_md)
+            elif tag_name in ["ul", "ol"]:
+                is_ordered = (tag_name == "ol")
+                li_items = []
+                idx = 1
+                for li in child.find_all("li", recursive=False):
+                    bullet = f"{idx}. " if is_ordered else "- "
+                    idx += 1
+                    li_content = cell_to_plain_text(li, assets_folder, indent_level + 1).strip()
+                    li_items.append(f"{prefix}  {bullet}{li_content}")
+                if li_items:
+                    parts.append("\n" + "\n".join(li_items))
+            elif tag_name == "table":
+                subtable_text = format_table_to_text(child, assets_folder=assets_folder, indent_level=indent_level + 1)
+                if subtable_text:
+                    parts.append("\n" + subtable_text)
+            else:
+                inner = cell_to_plain_text(child, assets_folder, indent_level).strip()
+                if inner:
+                    parts.append(inner)
+
+    res = " ".join(parts).replace("\r", "")
+    lines = res.split("\n")
+    cleaned_lines = [re.sub(r"[ \t]+", " ", l).strip() for l in lines]
+    cleaned_lines = [l for l in cleaned_lines if l]
+    
+    if len(cleaned_lines) == 1:
+        return cleaned_lines[0]
+    elif len(cleaned_lines) > 1:
+        return ("\n" + prefix).join(cleaned_lines)
+    return ""
+
+
+def format_table_to_text(table_tag: Tag, assets_folder: str = "assets", indent_level: int = 0) -> str:
+    """
+    Convert an HTML <table> into a structured, readable Markdown text list / key-value card format.
+    Ensures zero loss of context, preserving all column headers, cell values, links, lozenges,
+    and converting nested subtables into properly indented sub-lists.
+    """
+    if not table_tag:
+        return ""
+
+    prefix = "  " * indent_level
+    sub_prefix = "  " * (indent_level + 1)
+    nested_prefix = "  " * (indent_level + 2)
+
+    # 1. Extract headers and body rows
+    thead = table_tag.find("thead")
+    header_trs = thead.find_all("tr", recursive=False) if thead else []
+
+    tbody = table_tag.find("tbody") or table_tag
+    body_trs = [tr for tr in tbody.find_all("tr", recursive=False) if tr not in header_trs]
+
+    # Check if first tbody row is headers
+    if not header_trs and body_trs:
+        first_cells = body_trs[0].find_all(["th", "td"], recursive=False)
+        if first_cells and all(c.name == "th" for c in first_cells):
+            header_trs = [body_trs.pop(0)]
+
+    headers = []
+    if header_trs:
+        header_cells = header_trs[0].find_all(["th", "td"], recursive=False)
+        headers = [clean_header_label(cell_to_plain_text(c, assets_folder, indent_level=0)) for c in header_cells]
+
+    # Collect row data
+    data_rows = []
+    for tr in body_trs:
+        cells = tr.find_all(["td", "th"], recursive=False)
+        if cells:
+            data_rows.append(cells)
+
+    if not headers and not data_rows:
+        return ""
+
+    output_blocks = []
+
+    # 2. Strategy A: 2-Column Key-Value / Property Table
+    if (len(headers) == 2 or (not headers and data_rows and len(data_rows[0]) == 2)):
+        for cells in data_rows:
+            if len(cells) >= 2:
+                key_text = cell_to_plain_text(cells[0], assets_folder, indent_level=indent_level).strip()
+                val_text = cell_to_plain_text(cells[1], assets_folder, indent_level=indent_level + 1).strip()
+                
+                clean_key = re.sub(r"^\*\*|\*\*$", "", key_text).strip()
+                if not clean_key and not val_text:
+                    continue
+
+                if "\n" in val_text:
+                    output_blocks.append(f"{prefix}- **{clean_key}**:\n{sub_prefix}{val_text.lstrip()}")
+                else:
+                    output_blocks.append(f"{prefix}- **{clean_key}**: {val_text}")
+            elif len(cells) == 1:
+                single_val = cell_to_plain_text(cells[0], assets_folder, indent_level=indent_level).strip()
+                if single_val:
+                    output_blocks.append(f"{prefix}- {single_val}")
+
+    # 3. Strategy B: Single Column List Table
+    elif len(headers) == 1 or (not headers and data_rows and len(data_rows[0]) == 1):
+        for cells in data_rows:
+            if cells:
+                val = cell_to_plain_text(cells[0], assets_folder, indent_level=indent_level).strip()
+                if val:
+                    output_blocks.append(f"{prefix}- {val}")
+
+    # 4. Strategy C: Multi-Column Table (3+ columns: Feature, Screen, Test Matrix, Schema, etc.)
+    else:
+        num_cols = max(len(headers), max((len(r) for r in data_rows), default=0))
+        h_labels = [headers[i] if i < len(headers) and headers[i] else f"Field {i+1}" for i in range(num_cols)]
+
+        for row_idx, cells in enumerate(data_rows):
+            if not cells:
+                continue
+
+            first_val = cell_to_plain_text(cells[0], assets_folder, indent_level=indent_level).strip()
+            first_label = h_labels[0] if h_labels else "Item"
+
+            clean_first_val = re.sub(r"^\*\*|\*\*$", "", first_val).strip()
+            is_index_col = clean_first_val.isdigit() or (first_label.lower() in ["no", "#", "id", "num", "no."])
+
+            if is_index_col and len(cells) > 1:
+                second_label = h_labels[1] if len(h_labels) > 1 else "Item"
+                second_val = cell_to_plain_text(cells[1], assets_folder, indent_level=indent_level).strip()
+                clean_sec_val = re.sub(r"^\*\*|\*\*$", "", second_val).strip()
+                
+                row_header = f"{prefix}- **{second_label}: {clean_sec_val}** (No: {clean_first_val})"
+                remaining_start = 2
+            else:
+                row_header = f"{prefix}- **{first_label}: {clean_first_val}**"
+                remaining_start = 1
+
+            sub_items = []
+            for col_idx in range(remaining_start, len(cells)):
+                col_label = h_labels[col_idx] if col_idx < len(h_labels) else f"Field {col_idx+1}"
+                cell_val = cell_to_plain_text(cells[col_idx], assets_folder, indent_level=indent_level + 1).strip()
+                
+                if not cell_val:
+                    continue
+
+                if "\n" in cell_val:
+                    if cell_val.strip().startswith("- ") or cell_val.strip().startswith("* "):
+                        sub_items.append(f"{sub_prefix}- **{col_label}**:\n{cell_val}")
+                    else:
+                        sub_items.append(f"{sub_prefix}- **{col_label}**:\n{nested_prefix}{cell_val.lstrip()}")
+                else:
+                    sub_items.append(f"{sub_prefix}- **{col_label}**: {cell_val}")
+
+            if sub_items:
+                output_blocks.append(row_header + "\n" + "\n".join(sub_items))
+            else:
+                output_blocks.append(row_header)
+
+    return "\n".join(output_blocks)
+
+
 def inline_clean_html(tag: Tag) -> str:
     """Format the contents of an inline cell into single-line HTML without breaking lines."""
     parts = []
