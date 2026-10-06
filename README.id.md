@@ -7,7 +7,7 @@
 [![MCP Protocol](https://img.shields.io/badge/MCP-2.0-blue.svg?style=flat-square)](https://modelcontextprotocol.io/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Cross Agent](https://img.shields.io/badge/Cross--Agent-Compatible-7aa2f7?style=flat-square)](https://github.com/hanifalkauni/confluence-prd-converter)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](LICENSE)
 
 [English](README.md) • [Bahasa Indonesia](README.id.md)
 
@@ -309,6 +309,6 @@ python tests/test_all.py
 
 ## 📄 Lisensi
 
-SPDX-License-Identifier: [MIT](LICENSE)
+SPDX-License-Identifier: [Apache-2.0](LICENSE)
 
-Proyek ini dirilis di bawah lisensi [MIT License](LICENSE).
+Proyek ini dirilis di bawah lisensi [Apache License 2.0](LICENSE).

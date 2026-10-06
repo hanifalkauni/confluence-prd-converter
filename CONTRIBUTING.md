@@ -55,7 +55,7 @@ confluence-prd-converter/
 ├── SKILL.md                        # Master Agent Skill definition
 ├── README.md                       # Comprehensive English documentation
 ├── README.id.md                    # Comprehensive Indonesian documentation
-└── LICENSE                         # MIT License
+└── LICENSE                         # Apache License 2.0
 ```
 
 ---
