@@ -11,15 +11,23 @@ We actively maintain and provide security patches for the following versions:
 
 ---
 
-## 🔒 Handling Credentials & Access Tokens
+## 🔒 Defense-in-Depth Security Controls
 
-1. **Personal Access Tokens (PAT)**:
-   - `confluence-prd-converter` uses Confluence Personal Access Tokens (`CONFLUENCE_PAT`) or API tokens to authenticate with Confluence REST API.
-   - **Never hardcode tokens in git repositories**. Tokens should always be supplied via environment variables (`CONFLUENCE_PAT`), `.env` files (which are git-ignored by default), or configured inside secure local MCP settings (`mcp_config.json`).
-   - The converter discovers credentials in a safe hierarchical order: Explicit parameters -> Process Environment -> Local MCP configuration.
+1. **Zero In-Band Credential Exposure**:
+   - MCP tools (`fetch_and_convert_from_confluence`, etc.) and the CLI runner never accept Personal Access Tokens (`CONFLUENCE_PAT`) as tool or command-line arguments. This guarantees that tokens can never be passed through the AI model context window, chat logs, or OS process argument tables.
+   - **Never hardcode tokens in git repositories**. Always supply credentials via operating system environment variables (`CONFLUENCE_URL`, `CONFLUENCE_PAT`) or protect runtime sessions with [Samar MCP](https://github.com/hanifalkauni/samar-mcp) privacy middleware.
 
-2. **DOM Sanitization & Safe Parsing**:
-   - The core parser sanitizes all incoming HTML/XML content, stripping executable scripts (`<script>`), untrusted iframe sources outside configured embeds, tracking pixels, and inline event handlers (`onclick`, `onhover`).
+2. **Strict Same-Origin Authorization Guard & Anti-SSRF**:
+   - The `Authorization: Bearer` header is strictly bound to the configured `CONFLUENCE_URL` origin (scheme, hostname, and port).
+   - Cross-origin URL overrides do not inherit fallback credentials, HTTP redirects (`301`/`302`/`307`/`308`) are disabled on authenticated API calls, and link-local cloud instance metadata endpoints as well as internal `.internal`/`.goog` domains are explicitly blocked.
+
+3. **Path Traversal Confinement & Document Allowlist (`CWE-22`)**:
+   - Downloaded Confluence image attachments are strictly sanitized and confined to the target `assets` directory, blocking directory traversal sequences, hidden dotfiles, and non-image extensions.
+   - File read/write tools enforce a strict document extension allowlist (`.md`, `.markdown`, `.html`, `.htm`, `.xml`, `.xhtml`), blocking access to any configuration, credential, or key files.
+
+4. **Automatic Secret Redaction & DOM Sanitization**:
+   - All exception and error messages are automatically scrubbed by `sanitize_secret()` to redact any `Bearer`, `Basic`, URL userinfo, or token values before returning to the caller.
+   - The core parser sanitizes incoming HTML/XML content, stripping executable scripts (`<script>`), untrusted iframes, tracking pixels, and inline event handlers (`onclick`, `onhover`).
 
 ---
 

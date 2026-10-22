@@ -26,9 +26,37 @@ except ImportError:
 # Ensure local core packages can be imported
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.confluence_client import ConfluenceClient, extract_page_id_from_url
+from core.confluence_client import (
+    ConfluenceClient,
+    extract_page_id_from_url,
+    sanitize_secret
+)
 from core.parser import ConfluencePRDParser
 from core.validator import PRDValidator
+
+
+def _sanitize_subfolder_name(folder_name: Optional[str], default_name: str = "assets") -> str:
+    """Ensure subfolder name cannot traverse outside the parent output directory."""
+    if not folder_name or not folder_name.strip():
+        return default_name
+    cleaned = folder_name.replace("\x00", "").replace("\\", "/").strip("/")
+    safe_name = Path(cleaned).name
+    if not safe_name or safe_name in (".", "..") or safe_name.startswith("."):
+        return default_name
+    return safe_name
+
+
+ALLOWED_DOC_EXTENSIONS = {".md", ".markdown", ".html", ".htm", ".xml", ".xhtml"}
+
+
+def _assert_not_sensitive_path(file_path: Path) -> None:
+    """Strictly allow only non-hidden Markdown, HTML, or XML document files."""
+    name_lower = file_path.name.lower()
+    suffix_lower = file_path.suffix.lower()
+    if name_lower.startswith(".") or suffix_lower not in ALLOWED_DOC_EXTENSIONS:
+        raise PermissionError(
+            f"Access to file '{file_path.name}' is restricted. Only document files ({', '.join(sorted(ALLOWED_DOC_EXTENSIONS))}) are permitted."
+        )
 
 
 @mcp.tool()
@@ -38,13 +66,13 @@ def fetch_and_convert_from_confluence(
     download_images: bool = True,
     include_comments: bool = True,
     assets_folder_name: Optional[str] = None,
-    confluence_url: Optional[str] = None,
-    confluence_pat: Optional[str] = None,
     table_mode: str = "table"
 ) -> Dict[str, Any]:
     """
     Fetch a PRD page directly from Confluence (by URL or numeric Page ID), download all image assets,
     extract discussions and comments, and convert the document into a structured prd.md Markdown file.
+    Credentials (CONFLUENCE_URL and CONFLUENCE_PAT) are resolved securely from the server environment
+    and never passed through LLM tool arguments.
 
     Parameters:
     - page_id_or_url: Confluence page URL or numeric Page ID (e.g. '1766097385' or 'https://wiki.../viewpage.action?pageId=1766097385')
@@ -52,27 +80,20 @@ def fetch_and_convert_from_confluence(
     - download_images: Whether to automatically download image attachments to the local assets folder (default: true)
     - include_comments: Whether to fetch and append page discussions and comments as a Markdown section (default: true)
     - assets_folder_name: Custom subfolder name for image assets (default: auto-detected or 'assets')
-    - confluence_url: Optional explicit Confluence base URL (falls back to CONFLUENCE_URL env or mcp_config.json)
-    - confluence_pat: Optional explicit Personal Access Token (falls back to CONFLUENCE_PAT env or mcp_config.json)
     - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
         out_file = Path(output_md_path).resolve()
+        _assert_not_sensitive_path(out_file)
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
-        # Determine assets directory
-        if not assets_folder_name:
-            assets_dir_name = f"{out_file.stem}_files" if out_file.stem != "prd" else "assets"
-        else:
-            assets_dir_name = assets_folder_name
+        # Determine assets directory safely confined inside out_file.parent
+        default_assets = f"{out_file.stem}_files" if out_file.stem != "prd" else "assets"
+        assets_dir_name = _sanitize_subfolder_name(assets_folder_name, default_name=default_assets)
+        local_assets_dir = (out_file.parent / assets_dir_name).resolve()
 
-        local_assets_dir = out_file.parent / assets_dir_name
-
-        # Initialize Confluence Client
-        client = ConfluenceClient(
-            base_url=confluence_url,
-            pat=confluence_pat
-        )
+        # Initialize Confluence Client strictly from server environment / local config
+        client = ConfluenceClient()
 
         # Fetch page from Confluence
         page_data = client.fetch_page(page_id_or_url)
@@ -127,8 +148,8 @@ def fetch_and_convert_from_confluence(
     except Exception as e:
         return {
             "status": "error",
-            "error_message": str(e),
-            "page_input": page_id_or_url
+            "error_message": sanitize_secret(str(e)),
+            "page_input": sanitize_secret(str(page_id_or_url))
         }
 
 
@@ -152,6 +173,7 @@ def convert_confluence_html_to_prd(
     """
     try:
         src_path = Path(html_file_path).resolve()
+        _assert_not_sensitive_path(src_path)
         if not src_path.exists():
             return {
                 "status": "error",
@@ -167,6 +189,7 @@ def convert_confluence_html_to_prd(
         else:
             out_file = Path(output_md_path).resolve()
 
+        _assert_not_sensitive_path(out_file)
         out_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Auto-detect assets folder if not given
@@ -184,7 +207,7 @@ def convert_confluence_html_to_prd(
                     chosen_folder = c
                     break
         else:
-            chosen_folder = assets_folder_name
+            chosen_folder = _sanitize_subfolder_name(assets_folder_name, default_name="assets")
 
         # Parse HTML
         parser = ConfluencePRDParser(
@@ -215,7 +238,7 @@ def convert_confluence_html_to_prd(
     except Exception as e:
         return {
             "status": "error",
-            "error_message": str(e),
+            "error_message": sanitize_secret(str(e)),
             "html_file_path": html_file_path
         }
 
@@ -237,13 +260,14 @@ def convert_confluence_storage_to_prd(
     - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
-        assets_folder = assets_folder_name or "assets"
+        assets_folder = _sanitize_subfolder_name(assets_folder_name, default_name="assets")
         parser = ConfluencePRDParser(assets_folder=assets_folder, table_mode=table_mode)
         md_content = parser.parse_storage_xml(storage_xml_content)
 
         output_file_str = None
         if output_md_path:
             out_file = Path(output_md_path).resolve()
+            _assert_not_sensitive_path(out_file)
             out_file.parent.mkdir(parents=True, exist_ok=True)
             with open(out_file, "w", encoding="utf-8") as f:
                 f.write(md_content)
@@ -264,7 +288,7 @@ def convert_confluence_storage_to_prd(
     except Exception as e:
         return {
             "status": "error",
-            "error_message": str(e)
+            "error_message": sanitize_secret(str(e))
         }
 
 
@@ -280,12 +304,14 @@ def validate_prd_markdown(
     - md_file_path: Path to the prd.md file to inspect
     """
     try:
+        resolved = Path(md_file_path).resolve()
+        _assert_not_sensitive_path(resolved)
         validator = PRDValidator()
         return validator.validate_file(md_file_path)
     except Exception as e:
         return {
             "status": "error",
-            "error_message": str(e),
+            "error_message": sanitize_secret(str(e)),
             "md_file_path": md_file_path
         }
 

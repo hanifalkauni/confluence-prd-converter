@@ -20,7 +20,7 @@ if hasattr(sys.stdout, "reconfigure"):
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.confluence_client import ConfluenceClient, extract_page_id_from_url
+from core.confluence_client import ConfluenceClient, extract_page_id_from_url, sanitize_secret
 from core.parser import ConfluencePRDParser
 from core.validator import PRDValidator
 
@@ -38,11 +38,6 @@ def main():
         "--output", "-o",
         default=None,
         help="Path for output prd.md file (default: ./prd.md or [name].prd.md)"
-    )
-    parser.add_argument(
-        "--pat",
-        default=None,
-        help="Confluence Personal Access Token (defaults to CONFLUENCE_PAT env or mcp_config.json)"
     )
     parser.add_argument(
         "--url",
@@ -118,7 +113,7 @@ def main():
     else:
         print(f"[*] Mode: Live Confluence Fetch -> '{input_val}' (Table Mode: {args.table_mode})")
         try:
-            client = ConfluenceClient(base_url=args.url, pat=args.pat)
+            client = ConfluenceClient(base_url=args.url)
             if not client.base_url:
                 print("[-] Error: Confluence URL not provided or found in config.")
                 sys.exit(1)
@@ -162,7 +157,7 @@ def main():
             print(f"[+] Output written to: {out_file}")
 
         except Exception as e:
-            print(f"[-] Error during live fetch: {e}")
+            print(f"[-] Error during live fetch: {sanitize_secret(str(e))}")
             sys.exit(1)
 
     # 3. Validation

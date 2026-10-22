@@ -117,26 +117,32 @@ Automatically captures stakeholder feedback, reviewer comments, and architectura
 
 ### 💬 Method A: Universal MCP Server (Recommended for Tool Calling)
 
-Add `confluence-prd-converter` directly to your AI IDE (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
+1. Set your credentials in your OS Environment Variables (so no plaintext token is stored in `mcp_config.json`):
+   ```bash
+   # Linux / macOS
+   export CONFLUENCE_URL="https://wiki.yourcompany.com"
+   export CONFLUENCE_PAT="your_token_here"
 
-```json
-{
-  "mcpServers": {
-    "confluence-prd-converter": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "github:hanifalkauni/confluence-prd-converter",
-        "--mcp"
-      ],
-      "env": {
-        "CONFLUENCE_URL": "https://wiki.yourcompany.com",
-        "CONFLUENCE_PAT": "YOUR_PERSONAL_ACCESS_TOKEN"
-      }
-    }
-  }
-}
-```
+   # Windows PowerShell (User Scope)
+   [Environment]::SetEnvironmentVariable("CONFLUENCE_URL", "https://wiki.yourcompany.com", "User")
+   [Environment]::SetEnvironmentVariable("CONFLUENCE_PAT", "your_token_here", "User")
+   ```
+
+2. Add `confluence-prd-converter` to your AI IDE (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
+   ```json
+   {
+     "mcpServers": {
+       "confluence-prd-converter": {
+         "command": "npx",
+         "args": [
+           "-y",
+           "github:hanifalkauni/confluence-prd-converter",
+           "--mcp"
+         ]
+       }
+     }
+   }
+   ```
 
 ---
 

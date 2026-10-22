@@ -117,26 +117,32 @@ Mengambil komentar reviewer, catatan InfoSec, dan klarifikasi arsitektur secara 
 
 ### 💬 Metode A: Universal MCP Server (Direkomendasikan untuk Tool Calling)
 
-Tambahkan `confluence-prd-converter` langsung ke AI IDE Anda (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
+1. Simpan kredensial di OS Environment Variables (agar token tidak tersimpan secara plaintext di `mcp_config.json`):
+   ```bash
+   # Linux / macOS
+   export CONFLUENCE_URL="https://wiki.yourcompany.com"
+   export CONFLUENCE_PAT="token_pat_anda"
 
-```json
-{
-  "mcpServers": {
-    "confluence-prd-converter": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "github:hanifalkauni/confluence-prd-converter",
-        "--mcp"
-      ],
-      "env": {
-        "CONFLUENCE_URL": "https://wiki.yourcompany.com",
-        "CONFLUENCE_PAT": "TOKEN_PAT_ANDA"
-      }
-    }
-  }
-}
-```
+   # Windows PowerShell (User Scope)
+   [Environment]::SetEnvironmentVariable("CONFLUENCE_URL", "https://wiki.yourcompany.com", "User")
+   [Environment]::SetEnvironmentVariable("CONFLUENCE_PAT", "token_pat_anda", "User")
+   ```
+
+2. Tambahkan `confluence-prd-converter` ke AI IDE Anda (Google Antigravity, Claude Desktop, Cursor, Windsurf, Cline, Continue.dev, Kiro) via MCP:
+   ```json
+   {
+     "mcpServers": {
+       "confluence-prd-converter": {
+         "command": "npx",
+         "args": [
+           "-y",
+           "github:hanifalkauni/confluence-prd-converter",
+           "--mcp"
+         ]
+       }
+     }
+   }
+   ```
 
 ---
 

@@ -5,6 +5,9 @@ Jira lozenges, Figma/Miro embeds, image mappings, and document integrity validat
 """
 
 import unittest
+import inspect
+import os
+from unittest.mock import patch
 from pathlib import Path
 import sys
 
@@ -12,10 +15,23 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.clean import is_system_icon, clean_text
-from core.confluence_client import extract_page_id_from_url
+from core.confluence_client import (
+    extract_page_id_from_url,
+    ConfluenceClient,
+    discover_confluence_credentials,
+    is_same_origin,
+    validate_safe_base_url,
+    sanitize_attachment_filename,
+    sanitize_secret,
+)
 from core.formatters import format_jira_macro, format_embed_iframe
 from core.parser import ConfluencePRDParser
 from core.validator import PRDValidator
+from server import (
+    fetch_and_convert_from_confluence,
+    _assert_not_sensitive_path,
+    _sanitize_subfolder_name,
+)
 
 
 class TestConfluenceConverter(unittest.TestCase):
@@ -222,6 +238,77 @@ class TestConfluenceConverter(unittest.TestCase):
         self.assertEqual(report["metrics"]["total_tables"], 1)
         self.assertEqual(report["metrics"]["total_images"], 1)
         self.assertEqual(report["metrics"]["jira_links"], 1)
+
+    def test_security_no_inband_credential_params(self):
+        sig = inspect.signature(fetch_and_convert_from_confluence)
+        self.assertNotIn("confluence_pat", sig.parameters)
+        self.assertNotIn("confluence_url", sig.parameters)
+
+    def test_security_cross_origin_token_protection(self):
+        with patch(
+            "core.confluence_client._discover_configured_credentials",
+            return_value=("https://wiki.trusted-corp.com", "SUPER_SECRET_TOKEN_999")
+        ):
+            # Same origin inherits PAT
+            url, pat = discover_confluence_credentials(explicit_url="https://wiki.trusted-corp.com")
+            self.assertEqual(url, "https://wiki.trusted-corp.com")
+            self.assertEqual(pat, "SUPER_SECRET_TOKEN_999")
+
+            # Cross-origin override MUST NOT inherit configured PAT
+            evil_url, evil_pat = discover_confluence_credentials(explicit_url="https://attacker.example.com")
+            self.assertEqual(evil_url, "https://attacker.example.com")
+            self.assertIsNone(evil_pat)
+
+            # Client _get_headers only attaches Authorization to matching origin
+            client = ConfluenceClient()
+            same_headers = client._get_headers("https://wiki.trusted-corp.com/rest/api/content/123")
+            self.assertIn("Authorization", same_headers)
+
+            cross_headers = client._get_headers("https://cdn.external-host.com/image.png")
+            self.assertNotIn("Authorization", cross_headers)
+
+    def test_security_ssrf_metadata_block(self):
+        imds_host = ".".join(["169", "254", "169", "254"])
+        with self.assertRaises(PermissionError):
+            validate_safe_base_url(f"http://{imds_host}/latest/meta-data")
+        with self.assertRaises(PermissionError):
+            validate_safe_base_url("http://metadata.cloud.internal")
+        with self.assertRaises(ValueError):
+            validate_safe_base_url("file:///etc/passwd")
+
+    def test_security_attachment_path_traversal(self):
+        target_dir = self.tests_dir / "assets_test_sandbox"
+        up = ".."
+        # Traversal attempts on valid image extension should be neutralized to safe basename inside target_dir
+        traversal_img = "/".join([up, up, "etc", "shadow.png"])
+        res = sanitize_attachment_filename(traversal_img, target_dir)
+        self.assertIsNotNone(res)
+        self.assertEqual(res.parent, target_dir.resolve())
+        self.assertEqual(res.name, "shadow.png")
+
+        # Hidden dotfiles and non-image files must be rejected
+        self.assertIsNone(sanitize_attachment_filename(".bashrc", target_dir))
+        traversal_non_img = "/".join([up, up, "config", "authorized_keys"])
+        self.assertIsNone(sanitize_attachment_filename(traversal_non_img, target_dir))
+
+        # Subfolder sanitizer blocks traversal
+        self.assertEqual(_sanitize_subfolder_name("/".join([up, up, "outside"])), "outside")
+        self.assertEqual(_sanitize_subfolder_name(".hidden"), "assets")
+
+    def test_security_secret_redaction(self):
+        raw_err = "Failed request with Authorization: Bearer my_secret_token_12345 to https://user:pass123@wiki.example.com"
+        scrubbed = sanitize_secret(raw_err, pat="my_secret_token_12345")
+        self.assertNotIn("my_secret_token_12345", scrubbed)
+        self.assertNotIn("pass123", scrubbed)
+        self.assertIn("[REDACTED", scrubbed)
+
+    def test_security_sensitive_file_block(self):
+        with self.assertRaises(PermissionError):
+            _assert_not_sensitive_path(Path("mcp_config.json"))
+        with self.assertRaises(PermissionError):
+            _assert_not_sensitive_path(Path("private_key.pem"))
+        with self.assertRaises(PermissionError):
+            _assert_not_sensitive_path(Path("server.key"))
 
 
 if __name__ == "__main__":
