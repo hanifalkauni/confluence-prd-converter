@@ -49,7 +49,7 @@ confluence-prd-converter/
 │   └── test_all.py                 # Test suite aggregator
 ├── confluence-prd-converter.config.json # Project configuration file
 ├── schema.json                     # JSON Schema for configuration
-├── server.py                       # FastMCP Server implementation (4 tools)
+├── server.py                       # FastMCP Server implementation (5 tools)
 ├── requirements.txt                # Python runtime dependencies
 ├── package.json                    # NPM package definition & CLI entry point
 ├── SKILL.md                        # Master Agent Skill definition

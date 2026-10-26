@@ -100,16 +100,20 @@ Mengubah panel info, peringatan, tips, dan catatan Confluence menjadi format ale
 ### 6. 💬 Ekstraksi Diskusi & Komentar Halaman
 Mengambil komentar reviewer, catatan InfoSec, dan klarifikasi arsitektur secara otomatis ke dalam section `## 💬 Discussions & Page Comments` lengkap dengan badge pengirim, timestamp UTC, dan blockquote.
 
+### 7. 🔗 Penemuan Halaman Terkait (Opt-In & Zero Content Leak)
+Hanya aktif jika diminta secara eksplisit, mengeksplorasi dokumen yang terhubung (halaman induk/parent, sub-halaman/child specs, tautan konten, backlink, dan label space yang sama). Hanya judul dan link ringan yang dikumpulkan tanpa mengambil isi halaman, sehingga hemat token LLM dan aman.
+
 ---
 
 ## 🛠️ Daftar Tools MCP
 
 | Nama Tool | Deskripsi | Parameter Utama |
 | :--- | :--- | :--- |
-| `fetch_and_convert_from_confluence` | Mengambil PRD secara live via URL atau Page ID Confluence, mengunduh gambar lampiran, mengekstrak komentar, dan menghasilkan `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode` |
-| `convert_confluence_html_to_prd` | Mengonversi file export `.html` lokal Confluence ke format Markdown terstruktur. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `table_mode` |
-| `convert_confluence_storage_to_prd` | Mengonversi raw XML/XHTML Storage Format (`body.storage.value`) langsung ke Markdown. | `storage_xml_content`, `output_md_path`, `table_mode` |
+| `fetch_and_convert_from_confluence` | Mengambil PRD secara live via URL atau Page ID Confluence, mengunduh gambar lampiran, mengekstrak komentar, dan menghasilkan `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode`, `assets_folder_name`, `include_related_pages` (opt-in, default `false`) |
+| `convert_confluence_html_to_prd` | Mengonversi file export `.html` lokal Confluence ke format Markdown terstruktur. | `html_file_path`, `output_md_path`, `assets_folder_name`, `preserve_nested_tables`, `table_mode` |
+| `convert_confluence_storage_to_prd` | Mengonversi raw XML/XHTML Storage Format (`body.storage.value`) langsung ke Markdown. | `storage_xml_content`, `output_md_path`, `assets_folder_name`, `table_mode` |
 | `validate_prd_markdown` | Memeriksa integritas `prd.md` (tabel, link gambar, macro unparsed) dan menghasilkan metrik. | `md_file_path` |
+| `find_related_confluence_pages` | **Opt-in saja** — hanya berjalan jika Anda secara eksplisit meminta halaman terkait. Menampilkan halaman parent, child, linked, backlink, dan shared-label dari link yang Anda kirim (hanya judul/link; isi halaman terkait tidak pernah diambil). | `page_id_or_url`, `relation_types`, `limit` |
 
 ---
 
@@ -266,6 +270,11 @@ Fetch live dari URL Confluence:
 npx -y github:hanifalkauni/confluence-prd-converter --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
 ```
 
+Fetch live **beserta link halaman terkait** (opt-in; default mati, hanya judul/link):
+```bash
+npx -y github:hanifalkauni/confluence-prd-converter --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --related --related-types parent,children,linked
+```
+
 Validasi integritas markdown:
 ```bash
 python scripts/validate_output.py --input ./prd.md
@@ -298,7 +307,7 @@ confluence-prd-converter/
 ├── scripts/                         # Skrip CLI mandiri (run_converter, validate_output)
 ├── tests/                           # Unit test suite & fixture sample general
 ├── schema.json                      # JSON Schema konfigurasi
-└── confluence-prd-converter.config.json # File konfigurasi proyek
+└── confluence-prd-converter.config.json # Default runtime (verify_ssl, timeout, Jira base URL, table mode, default related). Kredensial tidak pernah dibaca dari file ini
 ```
 
 ---

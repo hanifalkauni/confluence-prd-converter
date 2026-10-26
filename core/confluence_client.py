@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 import httpx
 from .clean import is_system_icon
+from .settings import get_verify_ssl, get_timeout
 
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp"}
 
@@ -231,15 +232,15 @@ class ConfluenceClient:
         self,
         base_url: Optional[str] = None,
         pat: Optional[str] = None,
-        verify_ssl: bool = True,
-        timeout: float = 30.0
+        verify_ssl: Optional[bool] = None,
+        timeout: Optional[float] = None
     ):
         discovered_url, discovered_pat = discover_confluence_credentials(base_url, pat)
         raw_url = (discovered_url or "").rstrip("/")
         self.base_url = validate_safe_base_url(raw_url) if raw_url else ""
         self.pat = discovered_pat or ""
-        self.verify_ssl = verify_ssl
-        self.timeout = timeout
+        self.verify_ssl = get_verify_ssl() if verify_ssl is None else verify_ssl
+        self.timeout = get_timeout() if timeout is None else timeout
 
     def _get_headers(self, target_url: Optional[str] = None) -> Dict[str, str]:
         """
@@ -437,3 +438,165 @@ class ConfluenceClient:
         except Exception:
             pass
         return []
+
+    # ------------------------------------------------------------------
+    # Related pages discovery
+    # ------------------------------------------------------------------
+    def _get_json(self, path_or_query: str) -> Optional[Dict[str, Any]]:
+        """GET a JSON payload from the configured Confluence base URL (same-origin only)."""
+        if not self.base_url:
+            raise ValueError(
+                "Confluence Base URL is not configured. Set CONFLUENCE_URL environment variable."
+            )
+        endpoint = f"{self.base_url}{path_or_query}"
+        try:
+            with httpx.Client(
+                verify=self.verify_ssl,
+                timeout=self.timeout,
+                follow_redirects=False
+            ) as client:
+                response = client.get(endpoint, headers=self._get_headers(endpoint))
+                if response.status_code == 200:
+                    return response.json()
+        except Exception:
+            pass
+        return None
+
+    def page_url(self, page_id: str) -> str:
+        """Build a canonical viewpage URL for a page ID."""
+        return f"{self.base_url}/pages/viewpage.action?pageId={page_id}"
+
+    @staticmethod
+    def _cql_escape(value: str) -> str:
+        """Escape a value for safe embedding in a double-quoted CQL string (prevents CQL injection)."""
+        cleaned = re.sub(r"[\x00-\x1f]", " ", str(value))
+        return cleaned.replace("\\", "\\\\").replace('"', '\\"')
+
+    @staticmethod
+    def _clamp_limit(limit: Any, default: int = 10, maximum: int = 50) -> int:
+        try:
+            return max(1, min(int(limit), maximum))
+        except (TypeError, ValueError):
+            return default
+
+    def _brief(self, item: Dict[str, Any], relation: str) -> Dict[str, Any]:
+        raw_id = str(item.get("id", ""))
+        pid = raw_id if raw_id.isdigit() else ""
+        return {
+            "relation": relation,
+            "page_id": pid,
+            "title": item.get("title", ""),
+            "space_key": (item.get("space") or {}).get("key", ""),
+            "url": self.page_url(pid) if pid else "",
+        }
+
+    def fetch_child_pages(self, page_id: str, limit: int = 25) -> List[Dict[str, Any]]:
+        pid = extract_page_id_from_url(page_id)
+        data = self._get_json(f"/rest/api/content/{pid}/child/page?limit={self._clamp_limit(limit)}")
+        return [self._brief(i, "child") for i in (data or {}).get("results", [])]
+
+    def fetch_parent_page(self, page_id: str) -> Optional[Dict[str, Any]]:
+        pid = extract_page_id_from_url(page_id)
+        data = self._get_json(f"/rest/api/content/{pid}?expand=ancestors")
+        ancestors = (data or {}).get("ancestors", [])
+        return self._brief(ancestors[-1], "parent") if ancestors else None
+
+    def fetch_labels(self, page_id: str) -> List[str]:
+        pid = extract_page_id_from_url(page_id)
+        data = self._get_json(f"/rest/api/content/{pid}/label")
+        return [r.get("name", "") for r in (data or {}).get("results", []) if r.get("name")]
+
+    def search_cql(self, cql: str, limit: int = 10, relation: str = "search") -> List[Dict[str, Any]]:
+        q = urllib.parse.quote(cql, safe="")
+        data = self._get_json(f"/rest/api/content/search?cql={q}&limit={self._clamp_limit(limit)}&expand=space")
+        return [self._brief(i, relation) for i in (data or {}).get("results", [])]
+
+    def resolve_page_by_title(self, title: str, space_key: str = "") -> Optional[Dict[str, Any]]:
+        q = f'title = "{self._cql_escape(title)}" AND type = page'
+        if space_key:
+            q += f' AND space = "{self._cql_escape(space_key)}"'
+        res = self.search_cql(q, limit=1, relation="content_link")
+        return res[0] if res else None
+
+    def find_related_pages(
+        self,
+        page_id_or_url: str,
+        relation_types: Optional[List[str]] = None,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Discover related pages. relation_types: parent, children, linked (outbound links),
+        backlinks (inbound links), labels (shared labels), similar (title keyword match).
+        """
+        allowed = {"parent", "children", "linked", "backlinks", "labels", "similar"}
+        types = (set(relation_types) & allowed) if relation_types else {"parent", "children", "linked", "backlinks", "labels"}
+        limit = self._clamp_limit(limit)
+        page = self.fetch_page(page_id_or_url)
+        pid, space = page["page_id"], page.get("space_key", "")
+        related: List[Dict[str, Any]] = []
+
+        if "parent" in types:
+            parent = self.fetch_parent_page(pid)
+            if parent:
+                related.append(parent)
+        if "children" in types:
+            related.extend(self.fetch_child_pages(pid, limit))
+        if "linked" in types:
+            seen = set()
+            for ref in extract_internal_page_refs(page.get("storage_xml") or page.get("view_html") or "")[:limit * 3]:
+                if ref.get("page_id"):
+                    found = {"relation": "content_link", "page_id": ref["page_id"],
+                             "title": ref.get("title", ""), "space_key": space,
+                             "url": self.page_url(ref["page_id"])}
+                else:
+                    found = self.resolve_page_by_title(ref["title"], ref.get("space_key") or space)
+                if found and found["page_id"] != pid and found["page_id"] not in seen:
+                    seen.add(found["page_id"])
+                    related.append(found)
+                if len(seen) >= limit:
+                    break
+        if "backlinks" in types:
+            related.extend(self.search_cql(f'link = "{pid}" AND type = page', limit, "backlink"))
+        labels = self.fetch_labels(pid) if ("labels" in types) else []
+        if labels:
+            lab = ",".join('"' + self._cql_escape(l) + '"' for l in labels[:5])
+            cql = f'label IN ({lab}) AND type = page AND id != "{pid}"'
+            if space:
+                cql += f' AND space = "{self._cql_escape(space)}"'
+            related.extend(self.search_cql(cql, limit, "shared_label"))
+        if "similar" in types:
+            words = [w for w in re.findall(r"\w{4,}", page["title"])][:3]
+            if words:
+                cond = " OR ".join('title ~ "' + self._cql_escape(w) + '"' for w in words)
+                cql = f'({cond}) AND type = page AND id != "{pid}"'
+                if space:
+                    cql += f' AND space = "{self._cql_escape(space)}"'
+                related.extend(self.search_cql(cql, limit, "similar_title"))
+
+        # De-duplicate by page_id, keeping the first (most specific) relation
+        unique, ids = [], set()
+        for r in related:
+            if r["page_id"] and r["page_id"] not in ids:
+                ids.add(r["page_id"])
+                unique.append(r)
+        return {
+            "base_page": {"page_id": pid, "title": page["title"], "space_key": space,
+                          "url": self.page_url(pid), "labels": labels},
+            "related_pages": unique,
+        }
+
+
+def extract_internal_page_refs(content: str) -> List[Dict[str, str]]:
+    """Extract Confluence page references (ac:link ri:page and pageId hrefs) from storage XML / HTML."""
+    refs: List[Dict[str, str]] = []
+    if not content:
+        return refs
+    for m in re.finditer(r'<ri:page\b([^>]*?)/?>', content):
+        attrs = m.group(1)
+        t = re.search(r'ri:content-title="([^"]*)"', attrs)
+        s = re.search(r'ri:space-key="([^"]*)"', attrs)
+        if t:
+            refs.append({"title": t.group(1), "space_key": s.group(1) if s else ""})
+    for m in re.finditer(r'href="[^"]*?pageId=(\d+)[^"]*"', content):
+        refs.append({"page_id": m.group(1), "title": ""})
+    return refs

@@ -100,16 +100,20 @@ Transforms Confluence info/warning/note/tip panels into standard GitHub callouts
 ### 6. 💬 Discussion & Comment Extraction
 Automatically captures stakeholder feedback, reviewer comments, and architectural decisions into a structured `## 💬 Discussions & Page Comments` section, preserving author names, timestamps, user mentions, and formatting.
 
+### 7. 🔗 Opt-In Related Page Discovery (Zero Content Leak)
+When explicitly requested, discovers connected documents (parent context, child specs, outbound links in content, backlinks, and shared-space labels). Only lightweight titles and URLs are listed (no automatic page fetching), protecting LLM context tokens and bandwidth.
+
 ---
 
 ## 🛠️ MCP Tool Reference
 
 | Tool Name | Description | Key Parameters |
 | :--- | :--- | :--- |
-| `fetch_and_convert_from_confluence` | Live fetch from Confluence by URL or Page ID, downloads image attachments, extracts comments, and outputs `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode` |
-| `convert_confluence_html_to_prd` | Converts local Confluence exported `.html` file to structured Markdown. | `html_file_path`, `output_md_path`, `preserve_nested_tables`, `table_mode` |
-| `convert_confluence_storage_to_prd` | Converts raw XML/XHTML Storage Format (`body.storage.value`) directly to Markdown. | `storage_xml_content`, `output_md_path`, `table_mode` |
+| `fetch_and_convert_from_confluence` | Live fetch from Confluence by URL or Page ID, downloads image attachments, extracts comments, and outputs `prd.md`. | `page_id_or_url`, `output_md_path`, `download_images`, `include_comments`, `table_mode`, `assets_folder_name`, `include_related_pages` (opt-in, default `false`) |
+| `convert_confluence_html_to_prd` | Converts local Confluence exported `.html` file to structured Markdown. | `html_file_path`, `output_md_path`, `assets_folder_name`, `preserve_nested_tables`, `table_mode` |
+| `convert_confluence_storage_to_prd` | Converts raw XML/XHTML Storage Format (`body.storage.value`) directly to Markdown. | `storage_xml_content`, `output_md_path`, `assets_folder_name`, `table_mode` |
 | `validate_prd_markdown` | Inspects `prd.md` for broken tables, missing images, unparsed tags, and compiles statistics. | `md_file_path` |
+| `find_related_confluence_pages` | **Opt-in only** — runs only when you explicitly ask for related pages. Lists parent, child, linked, backlinked and shared-label pages of the link you provided (titles/links only; related content is never fetched). | `page_id_or_url`, `relation_types`, `limit` |
 
 ---
 
@@ -266,6 +270,11 @@ Live fetch from Confluence URL:
 npx -y github:hanifalkauni/confluence-prd-converter --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --output ./prd.md
 ```
 
+Live fetch **plus related-page links** (opt-in; off by default, titles/links only):
+```bash
+npx -y github:hanifalkauni/confluence-prd-converter --input "https://wiki.yourcompany.com/pages/viewpage.action?pageId=1766097385" --related --related-types parent,children,linked
+```
+
 Validate markdown integrity:
 ```bash
 python scripts/validate_output.py --input ./prd.md
@@ -298,7 +307,7 @@ confluence-prd-converter/
 ├── scripts/                         # Standalone CLI tools (run_converter, validate_output)
 ├── tests/                           # Unit test suite & generalized sample fixtures
 ├── schema.json                      # Configuration JSON Schema
-└── confluence-prd-converter.config.json # Project configuration file
+└── confluence-prd-converter.config.json # Runtime defaults (verify_ssl, timeout, Jira base URL, table mode, related defaults). Credentials are never read from it
 ```
 
 ---

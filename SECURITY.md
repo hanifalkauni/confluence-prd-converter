@@ -29,6 +29,11 @@ We actively maintain and provide security patches for the following versions:
    - All exception and error messages are automatically scrubbed by `sanitize_secret()` to redact any `Bearer`, `Basic`, URL userinfo, or token values before returning to the caller.
    - The core parser sanitizes incoming HTML/XML content, stripping executable scripts (`<script>`), untrusted iframes, tracking pixels, and inline event handlers (`onclick`, `onhover`).
 
+5. **Opt-In Related Pages & Shared Path Policy**:
+   - Related-page discovery (`find_related_confluence_pages`, `include_related_pages`, CLI `--related`) is OFF by default and runs only on explicit user request, starting solely from the page the user supplied. It returns metadata only; related page content is never fetched automatically.
+   - All CQL values are escaped, result counts are clamped, relation types are allowlisted, page IDs must be numeric, and remote titles are Markdown-escaped before being written to `prd.md`.
+   - The CLI runner enforces the same document-extension allowlist and assets-subfolder sanitization as the MCP server (`core/security.py`). The validator never probes files outside the document directory.
+   - `confluence-prd-converter.config.json` never supplies credentials; `url`/`pat` entries are ignored and placeholder values are discarded (`core/settings.py`).
 ---
 
 ## 🚨 Reporting a Vulnerability

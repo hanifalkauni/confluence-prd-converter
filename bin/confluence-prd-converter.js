@@ -29,6 +29,9 @@ Commands:
   init                Install adapter rules for all AI Agent IDEs in the current workspace
   --input, -i <url>   Convert a Confluence page URL, pageId, or local .html export
   --output, -o <path> Output Markdown file path (default: ./prd.md)
+  --table-mode <m>    Table mode: table (default) | text
+  --related           OPT-IN: append related Confluence page links (default: off)
+  --related-types <t> Comma list: parent,children,linked,backlinks,labels,similar
   --help, -h          Show this help message
 
 Examples:
@@ -83,7 +86,10 @@ if (args.includes("--mcp") || args.length === 0) {
   scriptArgs = args;
 }
 
-const child = spawn("python", [pythonScript, ...scriptArgs], {
+// Windows ships `python`; most Linux/macOS systems only provide `python3`.
+const pythonCmd = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
+
+const child = spawn(pythonCmd, [pythonScript, ...scriptArgs], {
   stdio: "inherit",
   env: process.env,
   cwd: rootDir

@@ -12,6 +12,8 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
+from .security import is_within_directory
+
 
 class PRDValidator:
     """Validates integrity and quality of converted PRD Markdown files."""
@@ -109,6 +111,7 @@ class PRDValidator:
         image_matches = re.findall(r"!\[(.*?)\]\((.*?)\)", md_content)
         total_images = len(image_matches)
         missing_images = []
+        outside_images = []
 
         check_dir = Path(doc_dir) if doc_dir else self.base_dir
         for alt, img_path in image_matches:
@@ -116,13 +119,18 @@ class PRDValidator:
             if img_path.startswith("http://") or img_path.startswith("https://") or img_path.startswith("data:"):
                 continue
 
-            # Check local file existence if possible
+            # Check local file existence only inside the document directory (no path-traversal probing)
             local_img_file = check_dir / img_path
+            if not is_within_directory(check_dir, local_img_file):
+                outside_images.append(img_path)
+                continue
             if doc_dir and not local_img_file.exists():
                 missing_images.append(img_path)
 
         if missing_images:
             warnings.append(f"{len(missing_images)} referenced local images not found on disk (e.g. {missing_images[0]}).")
+        if outside_images:
+            warnings.append(f"{len(outside_images)} image paths point outside the document directory and were not checked (e.g. {outside_images[0]}).")
 
         # 5. Table validation
         table_count = 0

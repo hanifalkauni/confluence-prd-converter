@@ -4,6 +4,7 @@ Converts Confluence View HTML and Storage XML into clean, professional Markdown.
 """
 
 import re
+import urllib.parse
 import warnings
 from bs4 import BeautifulSoup, Tag, NavigableString, XMLParsedAsHTMLWarning
 from typing import Optional, List, Dict, Any
@@ -12,6 +13,7 @@ from typing import Optional, List, Dict, Any
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 from .clean import clean_dom, clean_text, sanitize_html, is_system_icon
+from .settings import jira_issue_url
 from .formatters import (
     format_nested_table_to_html,
     format_table_to_text,
@@ -31,11 +33,16 @@ class ConfluencePRDParser:
         self,
         assets_folder: str = "assets",
         preserve_nested_tables: bool = True,
-        table_mode: str = "table"
+        table_mode: str = "table",
+        base_url: str = "",
+        space_key: str = ""
     ):
         self.assets_folder = assets_folder
         self.preserve_nested_tables = preserve_nested_tables
         self.table_mode = (table_mode or "table").lower()
+        # Optional: enables real links for <ac:link><ri:page> references
+        self.base_url = (base_url or "").rstrip("/")
+        self.space_key = space_key or ""
 
     def parse_html(self, html_content: str, title: Optional[str] = None) -> str:
         """Parse Confluence View/Export HTML content into Markdown."""
@@ -93,7 +100,7 @@ class ConfluencePRDParser:
                 if key:
                     span_jira["data-jira-key"] = key
                     a_link = soup.new_tag("a")
-                    a_link["href"] = f"https://jira.atlassian.com/browse/{key}"
+                    a_link["href"] = jira_issue_url(key)
                     a_link["class"] = "jira-issue-key"
                     a_link.string = key
                     span_jira.append(a_link)
@@ -231,8 +238,12 @@ class ConfluencePRDParser:
             if page_ref:
                 target = page_ref.get("ri:content-title") or page_ref.get("content-title") or "Page"
                 text = link_text or target
+                space = page_ref.get("ri:space-key") or page_ref.get("space-key") or self.space_key
                 a_tag = soup.new_tag("a")
-                a_tag["href"] = f"#{target.lower().replace(' ', '-')}"
+                if self.base_url and space:
+                    a_tag["href"] = f"{self.base_url}/display/{urllib.parse.quote(space, safe='')}/{urllib.parse.quote_plus(target)}"
+                else:
+                    a_tag["href"] = f"#{target.lower().replace(' ', '-')}"
                 a_tag.string = text
                 link_macro.replace_with(a_tag)
             elif user_ref:

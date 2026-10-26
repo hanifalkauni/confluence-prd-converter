@@ -16,6 +16,9 @@ from .formatters import (
 from .confluence_client import ConfluenceClient
 from .parser import ConfluencePRDParser
 from .validator import PRDValidator
+from .security import assert_not_sensitive_path, sanitize_subfolder_name, ALLOWED_DOC_EXTENSIONS
+from .related import format_related_section, md_safe
+from .settings import load_config, get_table_mode, get_related_defaults
 
 __all__ = [
     "clean_dom",
@@ -30,5 +33,13 @@ __all__ = [
     "resolve_image_tag",
     "ConfluenceClient",
     "ConfluencePRDParser",
-    "PRDValidator"
+    "PRDValidator",
+    "assert_not_sensitive_path",
+    "sanitize_subfolder_name",
+    "ALLOWED_DOC_EXTENSIONS",
+    "format_related_section",
+    "md_safe",
+    "load_config",
+    "get_table_mode",
+    "get_related_defaults"
 ]

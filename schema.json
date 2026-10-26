@@ -10,7 +10,7 @@
     },
     "confluence": {
       "type": "object",
-      "description": "Confluence connection and authentication settings",
+      "description": "Connection settings. NOTE: 'url' and 'pat' are documentation-only and are NEVER read at runtime; set CONFLUENCE_URL / CONFLUENCE_PAT as environment variables. Only verify_ssl and timeout_seconds take effect.",
       "properties": {
         "url": {
           "type": "string",
@@ -86,6 +86,25 @@
         "jira_base_url": {
           "type": "string",
           "description": "Fallback base URL for Jira issue links if not auto-detected"
+        }
+      }
+    },
+    "related": {
+      "type": "object",
+      "description": "Defaults for the OPT-IN related-pages feature. Related pages are never fetched unless the user explicitly requests them (tool call, include_related_pages=true, or CLI --related); there is intentionally no global enable switch.",
+      "properties": {
+        "default_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10,
+          "description": "Max results per relation type"
+        },
+        "default_relation_types": {
+          "type": "array",
+          "items": { "enum": ["parent", "children", "linked", "backlinks", "labels", "similar"] },
+          "default": ["parent", "children", "linked", "backlinks", "labels"],
+          "description": "Relation types used when none are specified"
         }
       }
     },

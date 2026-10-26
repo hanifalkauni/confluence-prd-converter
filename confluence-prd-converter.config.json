@@ -19,6 +19,10 @@
     "convert_callouts_to_alerts": true,
     "jira_base_url": "https://jira.yourcompany.com"
   },
+  "related": {
+    "default_limit": 10,
+    "default_relation_types": ["parent", "children", "linked", "backlinks", "labels"]
+  },
   "validation": {
     "check_broken_tables": true,
     "check_missing_images": true,

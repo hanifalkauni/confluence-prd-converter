@@ -14,6 +14,7 @@ import urllib.parse
 from typing import Optional, Tuple
 from bs4 import BeautifulSoup, Tag
 from .clean import is_system_icon, clean_text
+from .settings import jira_issue_url
 
 
 def format_nested_table_to_html(table_tag: Tag) -> str:
@@ -344,7 +345,7 @@ def format_jira_macro(tag: Tag, inline_mode: bool = False) -> str:
     if not key:
         key = clean_text(tag.get_text()).strip() or "JIRA-ISSUE"
 
-    url_target = jira_url if jira_url else f"https://jira.atlassian.com/browse/{key}"
+    url_target = jira_url if jira_url else jira_issue_url(key)
 
     if inline_mode:
         if status:

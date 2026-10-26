@@ -21,6 +21,7 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.validator import PRDValidator
+from core.security import assert_not_sensitive_path
 
 
 def main():
@@ -40,6 +41,12 @@ def main():
 
     args = parser.parse_args()
     file_path = Path(args.input).resolve()
+
+    try:
+        assert_not_sensitive_path(file_path)
+    except PermissionError as e:
+        print(f"[-] Security Error: {e}")
+        sys.exit(1)
 
     validator = PRDValidator(base_dir=str(file_path.parent))
     report = validator.validate_file(str(file_path))

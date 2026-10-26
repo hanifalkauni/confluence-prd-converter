@@ -8,8 +8,9 @@ transformation to pristine Markdown (prd.md), asset resolution, and structural v
 import sys
 import os
 import json
+import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 # Universal MCP import supporting mcp 1.x, mcp 2.x, and fastmcp
 try:
@@ -33,40 +34,30 @@ from core.confluence_client import (
 )
 from core.parser import ConfluencePRDParser
 from core.validator import PRDValidator
+from core.security import (
+    ALLOWED_DOC_EXTENSIONS,
+    sanitize_subfolder_name as _sanitize_subfolder_name,
+    assert_not_sensitive_path as _assert_not_sensitive_path,
+)
+from core.related import format_related_section as _format_related_section
+from core.settings import (
+    get_table_mode,
+    get_related_defaults,
+    load_config,
+)
 
 
-def _sanitize_subfolder_name(folder_name: Optional[str], default_name: str = "assets") -> str:
-    """Ensure subfolder name cannot traverse outside the parent output directory."""
-    if not folder_name or not folder_name.strip():
-        return default_name
-    cleaned = folder_name.replace("\x00", "").replace("\\", "/").strip("/")
-    safe_name = Path(cleaned).name
-    if not safe_name or safe_name in (".", "..") or safe_name.startswith("."):
-        return default_name
-    return safe_name
-
-
-ALLOWED_DOC_EXTENSIONS = {".md", ".markdown", ".html", ".htm", ".xml", ".xhtml"}
-
-
-def _assert_not_sensitive_path(file_path: Path) -> None:
-    """Strictly allow only non-hidden Markdown, HTML, or XML document files."""
-    name_lower = file_path.name.lower()
-    suffix_lower = file_path.suffix.lower()
-    if name_lower.startswith(".") or suffix_lower not in ALLOWED_DOC_EXTENSIONS:
-        raise PermissionError(
-            f"Access to file '{file_path.name}' is restricted. Only document files ({', '.join(sorted(ALLOWED_DOC_EXTENSIONS))}) are permitted."
-        )
 
 
 @mcp.tool()
 def fetch_and_convert_from_confluence(
     page_id_or_url: str,
     output_md_path: str = "./prd.md",
-    download_images: bool = True,
-    include_comments: bool = True,
+    download_images: Optional[bool] = None,
+    include_comments: Optional[bool] = None,
     assets_folder_name: Optional[str] = None,
-    table_mode: str = "table"
+    table_mode: Optional[str] = None,
+    include_related_pages: bool = False
 ) -> Dict[str, Any]:
     """
     Fetch a PRD page directly from Confluence (by URL or numeric Page ID), download all image assets,
@@ -81,8 +72,13 @@ def fetch_and_convert_from_confluence(
     - include_comments: Whether to fetch and append page discussions and comments as a Markdown section (default: true)
     - assets_folder_name: Custom subfolder name for image assets (default: auto-detected or 'assets')
     - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
+    - include_related_pages: Append a '## 🔗 Related Confluence Documents' section (parent, children, linked, backlinks, shared labels) (default: false). OPT-IN ONLY: set true solely when the user explicitly asks for related pages. Only titles/links are listed; related pages' content is never fetched.
     """
     try:
+        cfg_out = load_config()["output"]
+        download_images = cfg_out["download_images"] if download_images is None else download_images
+        include_comments = cfg_out["include_comments"] if include_comments is None else include_comments
+        table_mode = table_mode or get_table_mode()
         out_file = Path(output_md_path).resolve()
         _assert_not_sensitive_path(out_file)
         out_file.parent.mkdir(parents=True, exist_ok=True)
@@ -108,7 +104,12 @@ def fetch_and_convert_from_confluence(
             total_downloaded = len(downloaded)
 
         # Parse document (prefer Storage XML if available, fallback to View HTML)
-        parser = ConfluencePRDParser(assets_folder=assets_dir_name, table_mode=table_mode)
+        parser = ConfluencePRDParser(
+            assets_folder=assets_dir_name,
+            table_mode=table_mode,
+            base_url=client.base_url,
+            space_key=page_data.get("space_key", "")
+        )
         if storage_xml:
             md_content = parser.parse_storage_xml(storage_xml, title=title)
         else:
@@ -123,6 +124,15 @@ def fetch_and_convert_from_confluence(
                 if comments_md:
                     md_content = md_content.rstrip() + "\n\n" + comments_md
                     total_comments = len(comments)
+
+        # Related pages section
+        total_related = 0
+        if include_related_pages:
+            rel_defaults = get_related_defaults()
+            rel = client.find_related_pages(page_id, rel_defaults["relation_types"], rel_defaults["limit"])
+            if rel["related_pages"]:
+                md_content = md_content.rstrip() + "\n\n" + _format_related_section(rel["related_pages"])
+                total_related = len(rel["related_pages"])
 
         # Write output file
         with open(out_file, "w", encoding="utf-8") as f:
@@ -141,10 +151,46 @@ def fetch_and_convert_from_confluence(
             "table_mode": table_mode,
             "total_images_downloaded": total_downloaded,
             "total_comments_included": total_comments,
+            "total_related_pages": total_related,
             "total_lines": len(md_content.splitlines()),
             "validation": val_report
         }
 
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_message": sanitize_secret(str(e)),
+            "page_input": sanitize_secret(str(page_id_or_url))
+        }
+
+
+
+
+@mcp.tool()
+def find_related_confluence_pages(
+    page_id_or_url: str,
+    relation_types: Optional[List[str]] = None,
+    limit: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Find Confluence pages related to a given page URL or Page ID. OPT-IN ONLY: call this tool ONLY when the user explicitly asks for related/linked/child/parent pages. Returns metadata (title, id, link) only, never page content. Credentials are resolved from the server environment.
+
+    Parameters:
+    - page_id_or_url: Confluence page URL or numeric Page ID
+    - relation_types: Any of 'parent', 'children', 'linked' (outbound links in content), 'backlinks' (inbound links),
+      'labels' (pages sharing labels in the same space), 'similar' (title keyword match).
+      Default: parent, children, linked, backlinks, labels
+    - limit: Max results per relation type (default: 10)
+    """
+    try:
+        defaults = get_related_defaults()
+        client = ConfluenceClient()
+        result = client.find_related_pages(
+            page_id_or_url,
+            relation_types or defaults["relation_types"],
+            limit or defaults["limit"]
+        )
+        return {"status": "success", "total_related": len(result["related_pages"]), **result}
     except Exception as e:
         return {
             "status": "error",
@@ -159,7 +205,7 @@ def convert_confluence_html_to_prd(
     output_md_path: Optional[str] = None,
     assets_folder_name: Optional[str] = None,
     preserve_nested_tables: bool = True,
-    table_mode: str = "table"
+    table_mode: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Convert an exported local Confluence HTML file into a clean, production-grade prd.md file.
@@ -172,6 +218,7 @@ def convert_confluence_html_to_prd(
     - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
+        table_mode = table_mode or get_table_mode()
         src_path = Path(html_file_path).resolve()
         _assert_not_sensitive_path(src_path)
         if not src_path.exists():
@@ -248,7 +295,7 @@ def convert_confluence_storage_to_prd(
     storage_xml_content: str,
     output_md_path: Optional[str] = None,
     assets_folder_name: Optional[str] = None,
-    table_mode: str = "table"
+    table_mode: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Convert raw Confluence Storage Format (XHTML payload from Confluence API body.storage.value) into Markdown.
@@ -260,6 +307,7 @@ def convert_confluence_storage_to_prd(
     - table_mode: Table rendering mode: 'table' (default Markdown table) or 'text' (tableless structured text/list format)
     """
     try:
+        table_mode = table_mode or get_table_mode()
         assets_folder = _sanitize_subfolder_name(assets_folder_name, default_name="assets")
         parser = ConfluencePRDParser(assets_folder=assets_folder, table_mode=table_mode)
         md_content = parser.parse_storage_xml(storage_xml_content)
